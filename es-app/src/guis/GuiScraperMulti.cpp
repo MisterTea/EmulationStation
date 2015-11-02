@@ -26,6 +26,9 @@ GuiScraperMulti::GuiScraperMulti(Window* window, const std::queue<ScraperSearchP
 	mTotalSuccessful = 0;
 	mTotalSkipped = 0;
 
+	// Disable sleep while scraping
+	mWindow->setAllowSleep(false);
+
 	// set up grid
 	mTitle = std::make_shared<TextComponent>(mWindow, "SCRAPING IN PROGRESS", Font::get(FONT_SIZE_LARGE), 0x555555FF, ALIGN_CENTER);
 	mGrid.setEntry(mTitle, Vector2i(0, 0), false, true);
@@ -71,6 +74,9 @@ GuiScraperMulti::GuiScraperMulti(Window* window, const std::queue<ScraperSearchP
 
 GuiScraperMulti::~GuiScraperMulti()
 {
+	// Disable sleep while scraping
+	mWindow->setAllowSleep(true);
+
 	// view type probably changed (basic -> detailed)
 	for(auto it = SystemManager::getInstance()->getSystems().begin(); it != SystemManager::getInstance()->getSystems().end(); it++)
 		ViewController::get()->reloadGameListView(*it, false);

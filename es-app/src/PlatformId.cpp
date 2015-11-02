@@ -1,101 +1,50 @@
 #include "PlatformId.h"
-#include <string.h>
+#include "Log.h"
 
-extern const char* mameNameToRealName[];
+#include <string.h>
+#include <string>
+#include <map>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+
+using namespace std;
+
+map<string,map<string,string> > mameNameToRealName;
 
 namespace PlatformIds
 {
-	const char* PlatformNames[PLATFORM_COUNT + 1] = {
-		"unknown", // nothing set
+  void populateMameNameToRealName(const std::string &system) {
+    map<string,string> nameMap;
+    string filename = string("./MameMappings/") + system + string(".tsv");
+    LOG(LogDebug) << "Loading short->long mapping from " << filename;
+    std::ifstream infile(filename.c_str());
+    string shortName, longName;
+    string line;
+    while (getline(infile, line)) {
+      istringstream iss(line);
+      getline(iss, shortName, '\t');
+      getline(iss, longName, '\t');
+      nameMap[shortName] = longName;
+    }
+    mameNameToRealName[system] = nameMap;
+  }
 
-		"3do",
-		"amiga",
-		"amstradcpc",
-		"apple2",
-		"arcade",
-		"atari800",
-		"atari2600",
-		"atari5200",
-		"atari7800",
-		"atarilynx",
-		"atarist",
-		"atarijaguar",
-		"atarijaguarcd",
-		"atarixe",
-		"colecovision",
-		"c64", // commodore 64
-		"intellivision",
-		"macintosh",
-		"xbox",
-		"xbox360",
-		"msx",
-		"neogeo",
-		"ngp", // neo geo pocket
-		"ngpc", // neo geo pocket color
-		"n3ds", // nintendo 3DS
-		"n64", // nintendo 64
-		"nds", // nintendo DS
-		"nes", // nintendo entertainment system
-		"gb", // game boy
-		"gba", // game boy advance
-		"gbc", // game boy color
-		"gc", // gamecube
-		"wii",
-		"wiiu",
-		"pc",
-		"sega32x",
-		"segacd",
-		"dreamcast",
-		"gamegear",
-		"genesis", // sega genesis
-		"mastersystem", // sega master system
-		"megadrive", // sega megadrive
-		"saturn", // sega saturn
-		"psx",
-		"ps2",
-		"ps3",
-		"ps4",
-		"psvita",
-		"psp", // playstation portable
-		"snes", // super nintendo entertainment system
-		"pcengine", // turbografx-16/pcengine
-		"wonderswan",
-		"wonderswancolor",
-		"zxspectrum",
-
-		"ignore", // do not allow scraping for this system
-		"invalid"
-	};
-
-	PlatformId getPlatformId(const char* str)
+  const std::string &getCleanMameName(const std::vector<std::string>& platformIds, const std::string &from)
 	{
-		if(str == NULL)
-			return PLATFORM_UNKNOWN;
-
-		for(unsigned int i = 1; i < PLATFORM_COUNT; i++)
-		{
-			if(strcmp(PlatformNames[i], str) == 0)
-				return (PlatformId)i;
-		}
-
-		return PLATFORM_UNKNOWN;
-	}
-
-	const char* getPlatformName(PlatformId id)
-	{
-		return PlatformNames[id];
-	}
-
-	const char* getCleanMameName(const char* from)
-	{
-		const char** mameNames = mameNameToRealName;
-
-		while(*mameNames != NULL && strcmp(from, *mameNames) != 0)
-			mameNames += 2;
-
-		if(*mameNames)
-			return *(mameNames + 1);
-		
-		return from;
+	  string fromString(from);
+	  for (std::string s : platformIds) {
+	    if (mameNameToRealName.find(s) == mameNameToRealName.end()) {
+	      populateMameNameToRealName(s);
+	    }
+	    map<string,string> &nameMap = mameNameToRealName[s];
+	    if (nameMap.find(fromString) != nameMap.end()) {
+	      const std::string &filename = nameMap[fromString];
+	      LOG(LogDebug) << from << " maps to " << filename;
+	      return filename;
+	    }
+	  }
+	  LOG(LogDebug) << from << " has no mapping.";
+	  return from;
 	}
 }

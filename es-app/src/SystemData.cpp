@@ -14,7 +14,7 @@
 namespace fs = boost::filesystem;
 
 SystemData::SystemData(const std::string& name, const std::string& fullName, const std::string& startPath, const std::vector<std::string>& extensions, 
-	const std::string& command, const std::vector<PlatformIds::PlatformId>& platformIds, const std::string& themeFolder) :
+		       const std::string& command, const std::vector<std::string>& platformIds, const std::string& themeFolder) :
 	mRoot(FileData(".", this, FileType::FOLDER))
 {
 	mName = name;

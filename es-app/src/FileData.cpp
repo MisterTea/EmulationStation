@@ -48,8 +48,7 @@ std::string getCleanGameName(const std::string& str, const SystemData* system)
 {
 	fs::path path(str);
 	std::string stem = path.stem().generic_string();
-	if(system && system->hasPlatformId(PlatformIds::ARCADE) || system->hasPlatformId(PlatformIds::NEOGEO))
-		stem = PlatformIds::getCleanMameName(stem.c_str());
+	stem = PlatformIds::getCleanMameName(system->getPlatformIds(), stem);
 
 	return removeParenthesis(stem);
 }

@@ -131,7 +131,7 @@ GuiMetaDataEd::GuiMetaDataEd(Window* window, const FileData& file,
 
 	std::vector< std::shared_ptr<ButtonComponent> > buttons;
 
-	if(!mScraperParams.system->hasPlatformId(PlatformIds::PLATFORM_IGNORE))
+	if(!mScraperParams.system->hasPlatformId("ignore"))
 		buttons.push_back(std::make_shared<ButtonComponent>(mWindow, "SCRAPE", "scrape", std::bind(&GuiMetaDataEd::fetch, this)));
 
 	buttons.push_back(std::make_shared<ButtonComponent>(mWindow, "SAVE", "save", [&] { save(); delete this; }));
