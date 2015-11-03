@@ -19,10 +19,12 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
 */
+#if 0 //TODO: JJG
 #include "GuiRomsManager.h"
 #include "views/gamelist/BasicGameListView.h"
 #include "SystemData.h"
 #include "Settings.h"
+#include "GameListDB.h"
 #include "Util.h"
 #include "Window.h"
 #include "guis/GuiTextEditPopup.h"
@@ -96,7 +98,7 @@ private:
 	GuiRomsManager::PlatformData m_data;
 
 public:
-	RomsListView(Window* window, FileData* fileData, const GuiRomsManager::PlatformData& data)
+	RomsListView(Window* window, const FileData& fileData, const GuiRomsManager::PlatformData& data)
 		: BasicGameListView(window, fileData)
 		, m_data(data)
 	{
@@ -113,10 +115,10 @@ public:
 
 		mList.setAlignment(mList.ALIGN_LEFT);
 
-		fileData->changePath(m_data.externalRomsPath);
-		fileData->lazyPopulate();
-		fileData->sort(fileDataLessThan, true);
-		populateList(fileData->getChildren());
+    // TODO: JJG
+		//fileData.changePath(m_data.externalRomsPath);
+		//fileData.lazyPopulate();
+		populateList(fileData.getChildren(&getFileSorts().at(Settings::getInstance()->getInt("SortTypeIndex"))));
 	}
 
 	virtual std::vector<HelpPrompt> getHelpPrompts() override {
@@ -124,7 +126,7 @@ public:
 		prompts.push_back(HelpPrompt("left/right", "link-switch"));
 		prompts.push_back(HelpPrompt("up/down", "move"));
 
-		if (fs::is_directory(getCursor()->getPath())) {
+		if (fs::is_directory(getCursor().getPath())) {
 			prompts.push_back(HelpPrompt("a", "cd in"));
 		}
 
@@ -138,21 +140,22 @@ public:
 		}
 		else if (input.value != 0) {
 			if (config->isMappedTo("a", input)) {
-				FileData* cursor = getCursor();
+				FileData cursor = getCursor();
 
-				if (cursor->getType() == FOLDER) {
-					if(cursor->getChildren().empty()) {
-						cursor->lazyPopulate();
-						cursor->sort(fileDataLessThan, true);
+				if (cursor.getType() == FOLDER) {
+					if(cursor.getChildren().empty()) {
+            // TODO: JJG
+						//cursor.lazyPopulate();
+						//cursor.sort(fileDataLessThan, true);
 					}
 
 					mCursorStack.push(cursor);
-					populateList(cursor->getChildren());
+					populateList(cursor.getChildren());
 				}
 			}
 			else if (config->isMappedTo("b", input)) {
 				if (mCursorStack.size()) {
-					populateList(mCursorStack.top()->getParent()->getChildren());
+					//populateList(mCursorStack.top().getParent()->getChildren());
 					setCursor(mCursorStack.top());
 					mCursorStack.pop();
 				}
@@ -163,9 +166,9 @@ public:
 			}
 			else if (config->isMappedTo("right", input) || config->isMappedTo("left", input)) {
 				// Create / Delete symlink
-				FileData* cursor = getCursor();
+				FileData cursor = getCursor();
 				const int cursorId = mList.getCursor();
-				const fs::path fileName = cursor->getPath().filename();
+				const fs::path fileName = cursor.getPath().filename();
 				const fs::path platformRomsPath = m_data.romsPath;
 				const fs::path platformRomFilePath = fs::absolute(fileName, platformRomsPath);
 				const bool isSymLink = fs::is_symlink(platformRomFilePath);
@@ -175,26 +178,26 @@ public:
 					return true;
 				}
 
-				if (cursor->getType() == GAME) {
+				if (cursor.getType() == GAME) {
 					if (isSymLink) {
 						if (removeFileSymLink(platformRomFilePath)) {
 							updateCursor(cursorId, cursor);
 						}
 					}
 					else {
-						if (createFileSymLink(cursor->getPath(), platformRomFilePath)) {
+						if (createFileSymLink(cursor.getPath(), platformRomFilePath)) {
 							updateCursor(cursorId, cursor);
 						}
 					}
 				}
-				else if (cursor->getType() == FOLDER) {
+				else if (cursor.getType() == FOLDER) {
 					if (isSymLink) {
 						if (removeDirectorySymLink(platformRomFilePath)) {
 							updateCursor(cursorId, cursor);
 						}
 					}
 					else {
-						if (createDirectorySymLink(cursor->getPath(), platformRomFilePath)) {
+						if (createDirectorySymLink(cursor.getPath(), platformRomFilePath)) {
 							updateCursor(cursorId, cursor);
 						}
 					}
@@ -205,7 +208,7 @@ public:
 		return true;
 	}
 
-	virtual void populateList(const std::vector<FileData*>& files) override {
+	virtual void populateList(const std::vector<FileData>& files) override {
 		mList.clear();
 
 		const FileData* root = getRoot();
@@ -215,22 +218,22 @@ public:
 		mHeaderText.setText(systemData ? systemData->getFullName() : root->getCleanName());
 
 		for (auto it = files.begin(); it != files.end(); it++) {
-			const fs::path fileName = (*it)->getPath().filename();
+			const fs::path fileName = it->getPath().filename();
 			const fs::path platformRomFilePath = fs::absolute(fileName, platformRomsPath);
 			const bool isSymLink = fs::is_symlink(platformRomFilePath);
-			mList.add(formatName((*it)->getName(), isSymLink), *it, ((*it)->getType() == FOLDER));
+			mList.add(formatName(it->getName(), isSymLink), *it, (it->getType() == FOLDER));
 		}
 	}
 
 protected:
-	virtual void launch(FileData*) override {
+	virtual void launch(FileData &) override {
 	}
 
 	std::string formatName(const std::string& name, bool isLinked) const {
 		return str(boost::format("%1% %2%") %(isLinked ? "\u00A4" : "  ") %name);
 	}
 
-	void updateCursor(const int cursorId, FileData* fileData) {
+	void updateCursor(const int cursorId, const FileData &fileData) {
 		const fs::path fileName = fileData->getPath().filename();
 		const fs::path platformRomsPath = m_data.romsPath;
 		const fs::path platformRomFilePath = fs::absolute(fileName, platformRomsPath);
@@ -410,3 +413,4 @@ void GuiRomsManager::showCurrentPlatformRomsManager()
 
 	mWindow->pushGui(new RomsListView(mWindow, m_fileData.get(), data));
 }
+#endif

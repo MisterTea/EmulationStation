@@ -2,7 +2,7 @@
 #include "components/MenuComponent.h"
 #include "components/OptionListComponent.h"
 #include "components/SwitchComponent.h"
-#include "FileSorts.h"
+#include "GamelistDB.h"
 
 class IGameListView;
 
@@ -29,7 +29,7 @@ private:
 	typedef OptionListComponent<char> LetterList;
 	std::shared_ptr<LetterList> mJumpToLetterList;
 
-	typedef OptionListComponent<const FileData::SortType*> SortList;
+	typedef OptionListComponent<int> SortList;
 	std::shared_ptr<SortList> mListSort;
 
 	std::shared_ptr<SwitchComponent> mFavoriteOption;

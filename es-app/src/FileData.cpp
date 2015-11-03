@@ -1,5 +1,7 @@
 #include "FileData.h"
 #include "SystemData.h"
+#include "SystemManager.h"
+#include "Settings.h"
 #include "Log.h"
 
 namespace fs = boost::filesystem;
@@ -43,259 +45,96 @@ std::string removeParenthesis(const std::string& str)
 	return ret;
 }
 
-
-FileData::FileData(FileType type, const fs::path& path, SystemData* system)
-	: mType(type), mPath(path), mSystem(system), mParent(NULL), metadata(type == GAME ? GAME_METADATA : FOLDER_METADATA) // metadata is REALLY set in the constructor!
+std::string getCleanGameName(const std::string& str, const SystemData* system)
 {
-	// metadata needs at least a name field (since that's what getName() will return)
-	if(metadata.get("name").empty())
-		metadata.set("name", getCleanName());
-}
-
-FileData::~FileData()
-{
-	if(mParent)
-		mParent->removeChild(this);
-
-	clear();
-}
-
-std::string FileData::getCleanName() const
-{
-	std::string stem = mPath.stem().generic_string();
-	if(mSystem && (mSystem->hasPlatformId(PlatformIds::ARCADE) || mSystem->hasPlatformId(PlatformIds::NEOGEO)))
+	fs::path path(str);
+	std::string stem = path.stem().generic_string();
+	if(system && (system->hasPlatformId(PlatformIds::ARCADE) || system->hasPlatformId(PlatformIds::NEOGEO)))
 		stem = PlatformIds::getCleanMameName(stem.c_str());
-        return stem;
-	//return removeParenthesis(stem);
+
+	return removeParenthesis(stem);
 }
 
-const std::string& FileData::getThumbnailPath() const
+FileData::FileData(const std::string& fileID, SystemData* system, FileType type, const std::string& nameCache)
+	: mFileID(fileID), mSystem(system), mType(type), mNameCache(nameCache)
 {
-	if(!metadata.get("thumbnail").empty())
-		return metadata.get("thumbnail");
-	else
-		return metadata.get("image");
 }
 
-
-std::vector<FileData*> FileData::getFilesRecursive(unsigned int typeMask) const
+FileData::FileData() : FileData("", NULL, (FileType)0)
 {
-	std::vector<FileData*> out;
-
-	for(auto it = mChildren.begin(); it != mChildren.end(); it++)
-	{
-		if((*it)->getType() & typeMask)
-			out.push_back(*it);
-		
-		if((*it)->getChildren().size() > 0)
-		{
-			std::vector<FileData*> subchildren = (*it)->getFilesRecursive(typeMask);
-			out.insert(out.end(), subchildren.cbegin(), subchildren.cend());
-		}
-	}
-
-	return out;
 }
 
-std::vector<FileData*> FileData::getFavoritesRecursive(unsigned int typeMask) const
+FileData::FileData(const std::string& fileID, const std::string& systemID, FileType type) :
+	FileData(fileID, SystemManager::getInstance()->getSystemByName(systemID), type)
 {
-	std::vector<FileData*> out;
-	std::vector<FileData*> files = getFilesRecursive(typeMask);
+}
+
+const std::string& FileData::getSystemID() const
+{
+	return mSystem->getName();
+}
+
+const std::string& FileData::getName() const
+{
+	// try and cache what's in the DB
+	if(mNameCache.empty())
+		mNameCache = get_metadata().get<std::string>("name");
+
+	// nothing was in the DB...use the clean version of our path
+	if(mNameCache.empty())
+		mNameCache = getCleanName();
+
+	return mNameCache;
+}
+
+fs::path FileData::getPath() const
+{
+	return fileIDToPath(mFileID, mSystem);
+}
+
+FileType FileData::getType() const
+{
+	return mType;
+}
+
+MetaDataMap FileData::get_metadata() const
+{
+	return SystemManager::getInstance()->database().getFileData(mFileID, mSystem->getName());
+}
+
+void FileData::set_metadata(const MetaDataMap& metadata)
+{
+	SystemManager::getInstance()->database().setFileData(mFileID, getSystemID(), mType, metadata);
+}
+
+std::vector<FileData> FileData::getChildren(const FileSort* sort) const
+{
+	if(sort == NULL)
+		sort = &getFileSorts().at(Settings::getInstance()->getInt("SortTypeIndex"));
+
+	return SystemManager::getInstance()->database().getChildrenOf(mFileID, mSystem, true, true, sort);
+}
+
+std::vector<FileData> FileData::getChildrenRecursive(bool includeFolders, const FileSort* sort) const
+{
+	if(sort == NULL)
+		sort = &getFileSorts().at(Settings::getInstance()->getInt("SortTypeIndex"));
+
+	return SystemManager::getInstance()->database().getChildrenOf(mFileID, mSystem, false, includeFolders, sort);
+}
+
+std::vector<FileData> FileData::getFavoritesRecursive(bool includeFolders, const FileSort* sort) const
+{
+	std::vector<FileData> out;
+	std::vector<FileData> files = getChildrenRecursive(includeFolders, sort);
 
 	for (auto it = files.begin(); it != files.end(); it++)
 	{
-		if ((*it)->metadata.get("favorite").compare("yes") == 0)
+		if (it->get_metadata().get("favorite").compare("yes") == 0)
 		{
 			out.push_back(*it);
 		}
 	}
 
 	return out;
-}
-
-void FileData::changePath(const boost::filesystem::path& path)
-{
-	clear();
-
-	mPath = path;
-
-	// metadata needs at least a name field (since that's what getName() will return)
-	if(metadata.get("name").empty())
-		metadata.set("name", getCleanName());
-}
-
-void FileData::addChild(FileData* file)
-{
-	assert(mType == FOLDER);
-	assert(file->getParent() == NULL);
-
-	mChildren.push_back(file);
-	file->mParent = this;
-}
-
-void FileData::removeChild(FileData* file)
-{
-	assert(mType == FOLDER);
-	assert(file->getParent() == this);
-
-	for(auto it = mChildren.begin(); it != mChildren.end(); it++)
-	{
-		if(*it == file)
-		{
-			mChildren.erase(it);
-			return;
-		}
-	}
-
-	// File somehow wasn't in our children.
-	assert(false);
-}
-
-void FileData::clear()
-{
-	while(mChildren.size())
-		delete mChildren.back();
-}
-
-void FileData::lazyPopulate(const std::vector<std::string>& searchExtensions, SystemData* systemData)
-{
-	clear();
-	populateFolder(this, searchExtensions, systemData);
-}
-
-void FileData::sort(ComparisonFunction& comparator, bool ascending)
-{
-	std::sort(mChildren.begin(), mChildren.end(), comparator);
-
-	for(auto it = mChildren.begin(); it != mChildren.end(); it++)
-	{
-		if((*it)->getChildren().size() > 0)
-			(*it)->sort(comparator, ascending);
-	}
-
-	if(!ascending)
-		std::reverse(mChildren.begin(), mChildren.end());
-}
-
-void FileData::sort(const SortType& type)
-{
-	sort(*type.comparisonFunction, type.ascending);
-}
-
-void FileData::populateFolder(FileData* folder, const std::vector<std::string>& searchExtensions, SystemData* systemData)
-{
-	const fs::path& folderPath = folder->getPath();
-	if(!fs::is_directory(folderPath))
-	{
-		LOG(LogWarning) << "Error - folder with path \"" << folderPath << "\" is not a directory!";
-		return;
-	}
-
-	const std::string folderStr = folderPath.generic_string();
-
-	//make sure that this isn't a symlink to a thing we already have
-	if(fs::is_symlink(folderPath))
-	{
-		//if this symlink resolves to somewhere that's at the beginning of our path, it's gonna recurse
-		if(folderStr.find(fs::canonical(folderPath).generic_string()) == 0)
-		{
-			LOG(LogWarning) << "Skipping infinitely recursive symlink \"" << folderPath << "\"";
-			return;
-		}
-	}
-
-	fs::path filePath;
-	std::string extension;
-	bool isGame;
-	for(fs::directory_iterator end, dir(folderPath); dir != end; ++dir)
-	{
-		filePath = (*dir).path();
-
-		if(filePath.stem().empty())
-			continue;
-
-		//this is a little complicated because we allow a list of extensions to be defined (delimited with a space)
-		//we first get the extension of the file itself:
-		extension = filePath.extension().string();
-
-		//fyi, folders *can* also match the extension and be added as games - this is mostly just to support higan
-		//see issue #75: https://github.com/Aloshi/EmulationStation/issues/75
-
-		isGame = false;
-		if((searchExtensions.empty() && !fs::is_directory(filePath)) || (std::find(searchExtensions.begin(), searchExtensions.end(), extension) != searchExtensions.end()
-                        && filePath.filename().string().compare(0, 1, ".") != 0)){
-			FileData* newGame = new FileData(GAME, filePath.generic_string(), systemData);
-			folder->addChild(newGame);
-			isGame = true;
-		}
-
-		//add directories that also do not match an extension as folders
-		if(!isGame && fs::is_directory(filePath))
-		{
-			FileData* newFolder = new FileData(FOLDER, filePath.generic_string(), systemData);
-			folder->addChild(newFolder);
-		}
-	}
-}
-
-void FileData::populateRecursiveFolder(FileData* folder, const std::vector<std::string>& searchExtensions, SystemData* systemData)
-{
-	const fs::path& folderPath = folder->getPath();
-	if(!fs::is_directory(folderPath))
-	{
-		LOG(LogWarning) << "Error - folder with path \"" << folderPath << "\" is not a directory!";
-		return;
-	}
-
-	const std::string folderStr = folderPath.generic_string();
-
-	//make sure that this isn't a symlink to a thing we already have
-	if(fs::is_symlink(folderPath))
-	{
-		//if this symlink resolves to somewhere that's at the beginning of our path, it's gonna recurse
-		if(folderStr.find(fs::canonical(folderPath).generic_string()) == 0)
-		{
-			LOG(LogWarning) << "Skipping infinitely recursive symlink \"" << folderPath << "\"";
-			return;
-		}
-	}
-
-	fs::path filePath;
-	std::string extension;
-	bool isGame;
-	for(fs::directory_iterator end, dir(folderPath); dir != end; ++dir)
-	{
-		filePath = (*dir).path();
-
-		if(filePath.stem().empty())
-			continue;
-
-		//this is a little complicated because we allow a list of extensions to be defined (delimited with a space)
-		//we first get the extension of the file itself:
-		extension = filePath.extension().string();
-
-		//fyi, folders *can* also match the extension and be added as games - this is mostly just to support higan
-		//see issue #75: https://github.com/Aloshi/EmulationStation/issues/75
-
-		isGame = false;
-		if((searchExtensions.empty() && !fs::is_directory(filePath)) || (std::find(searchExtensions.begin(), searchExtensions.end(), extension) != searchExtensions.end()
-                        && filePath.filename().string().compare(0, 1, ".") != 0)){
-			FileData* newGame = new FileData(GAME, filePath.generic_string(), systemData);
-			folder->addChild(newGame);
-			isGame = true;
-		}
-
-		//add directories that also do not match an extension as folders
-		if(!isGame && fs::is_directory(filePath))
-		{
-			FileData* newFolder = new FileData(FOLDER, filePath.generic_string(), systemData);
-			populateRecursiveFolder(newFolder, searchExtensions, systemData);
-
-			//ignore folders that do not contain games
-			if(newFolder->getChildren().size() == 0)
-				delete newFolder;
-			else
-				folder->addChild(newFolder);
-		}
-	}
 }

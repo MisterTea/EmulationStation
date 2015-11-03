@@ -7,6 +7,7 @@
 #include "animations/LambdaAnimation.h"
 #include "SystemData.h"
 #include "Settings.h"
+#include "SystemManager.h"
 #include "Util.h"
 #include <boost/locale.hpp>
 #include <guis/GuiMsgBox.h>
@@ -39,7 +40,8 @@ void SystemView::populate()
 {
 	mEntries.clear();
 
-	for(auto it = SystemData::sSystemVector.begin(); it != SystemData::sSystemVector.end(); it++)
+	const std::vector<SystemData*>& systems = SystemManager::getInstance()->getSystems();
+	for(auto it = systems.begin(); it != systems.end(); it++)
 	{
 		const std::shared_ptr<ThemeData>& theme = (*it)->getTheme();
 

@@ -89,7 +89,7 @@ ScraperRequest::ScraperRequest(std::vector<ScraperSearchResult>& resultsWrite) :
 
 
 // ScraperHttpRequest
-ScraperHttpRequest::ScraperHttpRequest(std::vector<ScraperSearchResult>& resultsWrite, const std::string& url) 
+ScraperHttpRequest::ScraperHttpRequest(std::vector<ScraperSearchResult>& resultsWrite, const std::string& url)
 	: ScraperRequest(resultsWrite)
 {
 	setStatus(ASYNC_IN_PROGRESS);
@@ -117,7 +117,6 @@ void ScraperHttpRequest::update()
 
 
 // metadata resolving stuff
-
 std::unique_ptr<MDResolveHandle> resolveMetaDataAssets(const ScraperSearchResult& result, const ScraperSearchParams& search)
 {
 	return std::unique_ptr<MDResolveHandle>(new MDResolveHandle(result, search));
@@ -130,7 +129,7 @@ MDResolveHandle::MDResolveHandle(const ScraperSearchResult& result, const Scrape
 		std::string imgPath = getSaveAsPath(search, "image", result.imageUrl);
 		mFuncs.push_back(ResolvePair(downloadImageAsync(result.imageUrl, imgPath), [this, imgPath]
 		{
-			mResult.mdl.set("image", imgPath);
+			mResult.metadata.set("image", imgPath);
 			mResult.imageUrl = "";
 		}));
 	}
@@ -140,7 +139,7 @@ void MDResolveHandle::update()
 {
 	if(mStatus == ASYNC_DONE || mStatus == ASYNC_ERROR)
 		return;
-	
+
 	auto it = mFuncs.begin();
 	while(it != mFuncs.end())
 	{
@@ -163,11 +162,11 @@ void MDResolveHandle::update()
 
 std::unique_ptr<ImageDownloadHandle> downloadImageAsync(const std::string& url, const std::string& saveAs)
 {
-	return std::unique_ptr<ImageDownloadHandle>(new ImageDownloadHandle(url, saveAs, 
+	return std::unique_ptr<ImageDownloadHandle>(new ImageDownloadHandle(url, saveAs,
 		Settings::getInstance()->getInt("ScraperResizeWidth"), Settings::getInstance()->getInt("ScraperResizeHeight")));
 }
 
-ImageDownloadHandle::ImageDownloadHandle(const std::string& url, const std::string& path, int maxWidth, int maxHeight) : 
+ImageDownloadHandle::ImageDownloadHandle(const std::string& url, const std::string& path, int maxWidth, int maxHeight) :
 	mSavePath(path), mMaxWidth(maxWidth), mMaxHeight(maxHeight), mReq(new HttpReq(url))
 {
 }
@@ -186,7 +185,7 @@ void ImageDownloadHandle::update()
 	}
 
 	// download is done, save it to disk
-	std::ofstream stream(mSavePath, std::ios_base::out | std::ios_base::binary);
+	std::ofstream stream(getHomePath() + mSavePath, std::ios_base::out | std::ios_base::binary);
 	if(stream.bad())
 	{
 		setError("Failed to open image path to write. Permission error? Disk full?");
@@ -221,7 +220,7 @@ bool resizeImage(const std::string& path, int maxWidth, int maxHeight)
 
 	FREE_IMAGE_FORMAT format = FIF_UNKNOWN;
 	FIBITMAP* image = NULL;
-	
+
 	//detect the filetype
 	format = FreeImage_GetFileType(path.c_str(), 0);
 	if(format == FIF_UNKNOWN)
@@ -274,9 +273,9 @@ bool resizeImage(const std::string& path, int maxWidth, int maxHeight)
 std::string getSaveAsPath(const ScraperSearchParams& params, const std::string& suffix, const std::string& url)
 {
 	const std::string subdirectory = params.system->getName();
-	const std::string name = params.game->getPath().stem().generic_string() + "-" + suffix;
+	const std::string name = params.game.getPath().stem().generic_string() + "-" + suffix;
 
-	std::string path = getHomePath() + "/.emulationstation/downloaded_images/";
+	std::string path = "/.emulationstation/downloaded_images/";
 
 	if(!boost::filesystem::exists(path))
 		boost::filesystem::create_directory(path);

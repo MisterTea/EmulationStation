@@ -17,23 +17,19 @@
 #include "EmulationStation.h"
 #include "RecalboxSystem.h"
 #include "Settings.h"
-#include "ScraperCmdLine.h"
 #include "VolumeControl.h"
 #include <sstream>
 #include <boost/locale.hpp>
+#include "GamelistDB.h"
+#include "SystemManager.h"
 #include "resources/Font.h"
-#include "NetworkThread.h"
 #include "RecalboxSystem.h"
-
-
 
 #ifdef WIN32
 #include <Windows.h>
 #endif
 
 namespace fs = boost::filesystem;
-
-bool scrape_cmdline = false;
 
 bool parseArgs(int argc, char* argv[], unsigned int* width, unsigned int* height)
 {
@@ -75,9 +71,6 @@ bool parseArgs(int argc, char* argv[], unsigned int* width, unsigned int* height
 			bool vsync = (strcmp(argv[i + 1], "on") == 0 || strcmp(argv[i + 1], "1") == 0) ? true : false;
 			Settings::getInstance()->setBool("VSync", vsync);
 			i++; // skip vsync value
-		}else if(strcmp(argv[i], "--scrape") == 0)
-		{
-			scrape_cmdline = true;
 		}else if(strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
 		{
 #ifdef WIN32
@@ -88,7 +81,7 @@ bool parseArgs(int argc, char* argv[], unsigned int* width, unsigned int* height
 			AttachConsole(ATTACH_PARENT_PROCESS);
 			freopen("CONOUT$", "wb", stdout);
 #endif
-			std::cout << 
+			std::cout <<
 				"EmulationStation, a graphical front-end for ROM browsing.\n"
 				"Written by Alec \"Aloshi\" Lofquist.\n"
 				"Version " << PROGRAM_VERSION_STRING << ", built " << PROGRAM_BUILT_STRING << "\n\n"
@@ -99,7 +92,6 @@ bool parseArgs(int argc, char* argv[], unsigned int* width, unsigned int* height
 				"--draw-framerate		display the framerate\n"
 				"--no-exit			don't show the exit option in the menu\n"
 				"--debug				more logging, show console on Windows\n"
-				"--scrape			scrape using command line interface\n"
 				"--windowed			not fullscreen, should be used with --resolution\n"
 				"--vsync [1/on or 0/off]		turn vsync on or off (default is on)\n"
 				"--help, -h			summon a sentient, angry tuba\n\n"
@@ -130,23 +122,29 @@ bool verifyHomeFolderExists()
 	return true;
 }
 
-// Returns true if everything is OK, 
+// Returns true if everything is OK,
 bool loadSystemConfigFile(const char** errorString)
 {
 	*errorString = NULL;
 
-	if(!SystemData::loadConfig())
-	{
+	try {
+		SystemManager::getInstance()->loadConfig();
+	}
+	catch(ESException& e) {
 		LOG(LogError) << "Error while parsing systems configuration file!";
+		LOG(LogError) << e.what();
 		*errorString = "IT LOOKS LIKE YOUR SYSTEMS CONFIGURATION FILE HAS NOT BEEN SET UP OR IS INVALID. YOU'LL NEED TO DO THIS BY HAND, UNFORTUNATELY.\n\n"
 			"VISIT EMULATIONSTATION.ORG FOR MORE INFORMATION.";
 		return false;
 	}
 
-	if(SystemData::sSystemVector.size() == 0)
+	if(SystemManager::getInstance()->getSystems().size() == 0)
 	{
 		LOG(LogError) << "No systems found! Does at least one system have a game present? (check that extensions match!)\n(Also, make sure you've updated your es_systems.cfg for XML!)";
-		*errorString = "NOGAMEERRORMESSAGE";
+		*errorString = "WE CAN'T FIND ANY SYSTEMS!\n"
+			"CHECK THAT YOUR PATHS ARE CORRECT IN THE SYSTEMS CONFIGURATION FILE, "
+			"AND YOUR GAME DIRECTORY HAS AT LEAST ONE GAME WITH THE CORRECT EXTENSION.\n\n"
+			"VISIT EMULATIONSTATION.ORG FOR MORE INFORMATION.";
 		return false;
 	}
 
@@ -154,9 +152,14 @@ bool loadSystemConfigFile(const char** errorString)
 }
 
 //called on exit, assuming we get far enough to have the log initialized
-void onExit()
+void close_log_on_exit()
 {
 	Log::close();
+}
+
+void delete_singletons_on_exit()
+{
+	delete SystemManager::getInstance();
 }
 
 int setLocale(char * argv1)
@@ -176,10 +179,10 @@ int setLocale(char * argv1)
     		getcwd(abs_exe_path, sizeof(abs_exe_path));
     		chdir(path_save);
   	}
-	boost::locale::localization_backend_manager my = boost::locale::localization_backend_manager::global(); 
+	boost::locale::localization_backend_manager my = boost::locale::localization_backend_manager::global();
 	// Get global backend
 
-    	my.select("std"); 
+    	my.select("std");
 	boost::locale::localization_backend_manager::global(my);
     	// set this backend globally
 
@@ -214,8 +217,8 @@ int main(int argc, char* argv[])
 	// only show the console on Windows if HideConsole is false
 #ifdef WIN32
 	// MSVC has a "SubSystem" option, with two primary options: "WINDOWS" and "CONSOLE".
-	// In "WINDOWS" mode, no console is automatically created for us.  This is good, 
-	// because we can choose to only create the console window if the user explicitly 
+	// In "WINDOWS" mode, no console is automatically created for us.  This is good,
+	// because we can choose to only create the console window if the user explicitly
 	// asks for it, preventing it from flashing open and then closing.
 	// In "CONSOLE" mode, a console is always automatically created for us before we
 	// enter main. In this case, we can only hide the console after the fact, which
@@ -237,7 +240,7 @@ int main(int argc, char* argv[])
 	}else{
 		// we want to hide the console
 		// if we're compiled with the "WINDOWS" subsystem, this is already done.
-		// if we're compiled with the "CONSOLE" subsystem, a console is already created; 
+		// if we're compiled with the "CONSOLE" subsystem, a console is already created;
 		// it'll flash open, but we hide it nearly immediately
 		if(GetConsoleWindow()) // should only pass in "CONSOLE" mode
 			ShowWindow(GetConsoleWindow(), SW_HIDE);
@@ -253,19 +256,20 @@ int main(int argc, char* argv[])
 	LOG(LogInfo) << "EmulationStation - v" << PROGRAM_VERSION_STRING << ", built " << PROGRAM_BUILT_STRING;
 
 	//always close the log on exit
-	atexit(&onExit);
+	atexit(&close_log_on_exit);
+
+	// delete SystemDatas at exit too
+	atexit(&delete_singletons_on_exit);
 
 	// Set locale
 	setLocale(argv[0]);
 
-    Renderer::init(0, 0);
+    Renderer::init(width, height);
 	Window window;
 	ViewController::init(&window);
 	window.pushGui(ViewController::get());
 
-	if(!scrape_cmdline)
-    {
-        if(!window.init(width, height, false))
+		if(!window.init(width, height, false))
 		{
 			LOG(LogError) << "Window failed to initialize!";
 			return 1;
@@ -276,7 +280,6 @@ int main(int argc, char* argv[])
 		LOG(LogInfo) << " ARB_texture_non_power_of_two: " << (glExts.find("ARB_texture_non_power_of_two") != std::string::npos ? "ok" : "MISSING");
 
 		window.renderLoadingScreen();
-	}
 
 	const char* errorMsg = NULL;
 	if(!loadSystemConfigFile(&errorMsg))
@@ -285,7 +288,6 @@ int main(int argc, char* argv[])
 		if(errorMsg == NULL)
 		{
 			LOG(LogError) << "Unknown error occured while parsing system config file.";
-			if(!scrape_cmdline)
 				Renderer::deinit();
 			return 1;
 		}
@@ -293,7 +295,7 @@ int main(int argc, char* argv[])
 		// we can't handle es_systems.cfg file problems inside ES itself, so display the error message then quit
 		window.pushGui(new GuiMsgBox(&window,
 			errorMsg,
-			"QUIT", [] { 
+			"QUIT", [] {
 				SDL_Event* quit = new SDL_Event();
 				quit->type = SDL_QUIT;
 				SDL_PushEvent(quit);
@@ -311,33 +313,14 @@ int main(int argc, char* argv[])
 		RecalboxSystem::getInstance()->launchKodi(&window);
 	}
 	RecalboxSystem::getInstance()->getIpAdress();
-	// UPDATED VERSION MESSAGE
-	if(RecalboxSystem::getInstance()->needToShowVersionMessage()){
-		 window.pushGui(new GuiMsgBox(&window,
-		RecalboxSystem::getInstance()->getVersionMessage(),
-		"OK", [] {
-						RecalboxSystem::getInstance()->versionMessageDisplayed();
-					},"",nullptr,"",nullptr, ALIGN_LEFT));
-	}
-
-	// UPDATE CHECK THREAD
-	if(std::string("1").compare(RecalboxSystem::getInstance()->getRecalboxConfig("updates.enabled")) == 0){
-		NetworkThread * nthread = new NetworkThread(&window);
-	}
-
-	//run the command line scraper then quit
-	if(scrape_cmdline)
-	{
-		return run_scraper_cmdline();
-	}
 
 	//dont generate joystick events while we're loading (hopefully fixes "automatically started emulator" bug)
 	SDL_JoystickEventState(SDL_DISABLE);
-        
+
         // Initialize audio manager
         VolumeControl::getInstance()->init();
         AudioManager::getInstance()->init();
-        
+
 	// preload what we can right away instead of waiting for the user to select it
 	// this makes for no delays when accessing content, but a longer startup time
 	ViewController::get()->preload();
@@ -406,11 +389,12 @@ int main(int argc, char* argv[])
 		Log::flush();
 	}
 
+	Settings::getInstance()->saveFile();
+
 	while(window.peekGui() != ViewController::get())
 		delete window.peekGui();
-	window.deinit();
 
-	SystemData::deleteSystems();
+	window.deinit();
 
 	LOG(LogInfo) << "EmulationStation cleanly shutting down.";
 

@@ -12,9 +12,8 @@
 #include "animations/LaunchAnimation.h"
 #include "animations/MoveCameraAnimation.h"
 #include "animations/LambdaAnimation.h"
-
+#include "SystemManager.h"
 #include "AudioManager.h"
-
 
 ViewController* ViewController::sInstance = NULL;
 
@@ -49,12 +48,12 @@ void ViewController::goToStart()
 	/* mState.viewing = START_SCREEN;
 	mCurrentView.reset();
 	playViewTransition(); */
-	goToSystemView(SystemData::sSystemVector.at(0));
+	goToSystemView(SystemManager::getInstance()->getSystems().at(0));
 }
 
 int ViewController::getSystemId(SystemData* system)
 {
-	std::vector<SystemData*>& sysVec = SystemData::sSystemVector;
+	const std::vector<SystemData*>& sysVec = SystemManager::getInstance()->getSystems();
 	return std::find(sysVec.begin(), sysVec.end(), system) - sysVec.begin();
 }
 
@@ -65,6 +64,7 @@ void ViewController::goToSystemView(SystemData* system)
 
 	auto systemList = getSystemListView();
 	systemList->setPosition(getSystemId(system) * (float)Renderer::getScreenWidth(), systemList->getPosition().y());
+
 	systemList->goToSystem(system, false);
 	mCurrentView = systemList;
 
@@ -76,9 +76,8 @@ void ViewController::goToNextGameList()
 	assert(mState.viewing == GAME_LIST);
 	SystemData* system = getState().getSystem();
 	assert(system);
-        AudioManager::getInstance()->startMusic(system->getNext()->getTheme());
-
-	goToGameList(system->getNext());
+  AudioManager::getInstance()->startMusic(SystemManager::getInstance()->getNext(system)->getTheme());
+	goToGameList(SystemManager::getInstance()->getNext(system));
 }
 
 void ViewController::goToPrevGameList()
@@ -86,9 +85,8 @@ void ViewController::goToPrevGameList()
 	assert(mState.viewing == GAME_LIST);
 	SystemData* system = getState().getSystem();
 	assert(system);
-        AudioManager::getInstance()->startMusic(system->getPrev()->getTheme());
-
-	goToGameList(system->getPrev());
+  AudioManager::getInstance()->startMusic(SystemManager::getInstance()->getPrev(system)->getTheme());
+	goToGameList(SystemManager::getInstance()->getPrev(system));
 }
 
 void ViewController::goToGameList(SystemData* system)
@@ -122,20 +120,20 @@ void ViewController::goToGameList(SystemData* system)
 	playViewTransition();
 }
 
-void ViewController::updateFavorite(SystemData* system, FileData* file)
+void ViewController::updateFavorite(SystemData* system, const FileData& file)
 {
 	IGameListView* view = getGameListView(system).get();
 	if (Settings::getInstance()->getBool("FavoritesOnly"))
 	{
-		const std::vector<FileData*>& files = system->getRootFolder()->getChildren();
+		const std::vector<FileData>& files = system->getRootFolder().getChildren();
 		view->populateList(files);
 		int pos = std::find(files.begin(), files.end(), file) - files.begin();
 		bool found = false;
 		for (auto it = files.begin() + pos; it != files.end(); it++)
 		{
-			if ((*it)->getType() == GAME)
+			if (it->getType() == GAME)
 			{
-				if ((*it)->metadata.get("favorite").compare("yes") == 0)
+				if (it->get_metadata().get("favorite").compare("yes") == 0)
 				{
 					view->setCursor(*it);
 					found = true;
@@ -148,9 +146,9 @@ void ViewController::updateFavorite(SystemData* system, FileData* file)
 		{
 			for (auto it = files.begin() + pos; it != files.begin(); it--)
 			{
-				if ((*it)->getType() == GAME)
+				if (it->getType() == GAME)
 				{
-					if ((*it)->metadata.get("favorite").compare("yes") == 0)
+					if (it->get_metadata().get("favorite").compare("yes") == 0)
 					{
 						view->setCursor(*it);
 						break;
@@ -213,18 +211,38 @@ void ViewController::playViewTransition()
 	}
 }
 
-void ViewController::onFileChanged(FileData* file, FileChangeType change)
+void ViewController::onFilesChanged(SystemData* system)
 {
-	auto it = mGameListViews.find(file->getSystem());
+	if(system == NULL) // (all systems)
+	{
+		// onFilesChanged() can cause a view to be recreated, which will invalidate
+		// any iterators for mGameListViews, so we make a vector of views to reload
+		std::vector<IGameListView*> toReload;
+		for(auto it = mGameListViews.begin(); it != mGameListViews.end(); it++)
+			toReload.push_back(it->second.get());
+
+		for(auto it = toReload.begin(); it != toReload.end(); it++)
+			(*it)->onFilesChanged();
+
+	}else{
+		auto it = mGameListViews.find(system);
 	if(it != mGameListViews.end())
-		it->second->onFileChanged(file, change);
+			it->second->onFilesChanged();
+	}
 }
 
-void ViewController::launch(FileData* game, Eigen::Vector3f center)
+void ViewController::onMetaDataChanged(SystemData* system, const FileData& file)
 {
-	if(game->getType() != GAME)
+	auto it = mGameListViews.find(system);
+	if(it != mGameListViews.end())
+		it->second->onMetaDataChanged(file);
+}
+
+void ViewController::launch(FileData& game, Eigen::Vector3f center)
 	{
-		LOG(LogError) << "tried to launch something that isn't a game";
+	if(game.getType() != GAME)
+	{
+		LOG(LogError) << "Tried to launch something that isn't a game!";
 		return;
 	}
 
@@ -245,20 +263,20 @@ void ViewController::launch(FileData* game, Eigen::Vector3f center)
 		};
 		setAnimation(new LambdaAnimation(fadeFunc, 800), 0, [this, game, fadeFunc]
 		{
-			game->getSystem()->launchGame(mWindow, game);
+			game.getSystem()->launchGame(mWindow, game);
 			mLockInput = false;
 			setAnimation(new LambdaAnimation(fadeFunc, 800), 0, nullptr, true);
-			this->onFileChanged(game, FILE_METADATA_CHANGED);
+			this->onMetaDataChanged(game.getSystem(), game);
 		});
 	}else{
 		// move camera to zoom in on center + fade out, launch game, come back in
 		setAnimation(new LaunchAnimation(mCamera, mFadeOpacity, center, 1500), 0, [this, origCamera, center, game]
 		{
-			game->getSystem()->launchGame(mWindow, game);
+			game.getSystem()->launchGame(mWindow, game);
 			mCamera = origCamera;
 			mLockInput = false;
 			setAnimation(new LaunchAnimation(mCamera, mFadeOpacity, center, 600), 0, nullptr, true);
-			this->onFileChanged(game, FILE_METADATA_CHANGED);
+			this->onMetaDataChanged(game.getSystem(), game);
 		});
 	}
 }
@@ -274,18 +292,7 @@ std::shared_ptr<IGameListView> ViewController::getGameListView(SystemData* syste
 	std::shared_ptr<IGameListView> view;
 
 	//decide type
-	bool detailed = false;
-	std::vector<FileData*> files = system->getRootFolder()->getFilesRecursive(GAME | FOLDER);
-	for(auto it = files.begin(); it != files.end(); it++)
-	{
-		if(!(*it)->getThumbnailPath().empty())
-		{
-			detailed = true;
-			break;
-		}
-	}
-
-	if(detailed)
+	if(system->hasFileWithImage())
 		view = std::shared_ptr<IGameListView>(new DetailedGameListView(mWindow, system->getRootFolder(), system));
 	else
 		view = std::shared_ptr<IGameListView>(new BasicGameListView(mWindow, system->getRootFolder()));
@@ -295,7 +302,7 @@ std::shared_ptr<IGameListView> ViewController::getGameListView(SystemData* syste
 
 	view->setTheme(system->getTheme());
 
-	std::vector<SystemData*>& sysVec = SystemData::sSystemVector;
+	const std::vector<SystemData*>& sysVec = SystemManager::getInstance()->getSystems();
 	int id = std::find(sysVec.begin(), sysVec.end(), system) - sysVec.begin();
 	view->setPosition(id * (float)Renderer::getScreenWidth(), (float)Renderer::getScreenHeight() * 2);
 
@@ -384,7 +391,8 @@ void ViewController::render(const Eigen::Affine3f& parentTrans)
 
 void ViewController::preload()
 {
-	for(auto it = SystemData::sSystemVector.begin(); it != SystemData::sSystemVector.end(); it++)
+	const std::vector<SystemData*>& systems = SystemManager::getInstance()->getSystems();
+	for(auto it = systems.begin(); it != systems.end(); it++)
 	{
 		getGameListView(*it);
 	}
@@ -398,7 +406,7 @@ void ViewController::reloadGameListView(IGameListView* view, bool reloadTheme)
 		{
 			bool isCurrent = (mCurrentView == it->second);
 			SystemData* system = it->first;
-			FileData* cursor = view->getCursor();
+			FileData cursor = view->getCursor();
 			mGameListViews.erase(it);
 
 			if(reloadTheme)
@@ -417,7 +425,7 @@ void ViewController::reloadGameListView(IGameListView* view, bool reloadTheme)
 
 void ViewController::reloadAll()
 {
-	std::map<SystemData*, FileData*> cursorMap;
+	std::map<SystemData*, FileData> cursorMap;
 	for(auto it = mGameListViews.begin(); it != mGameListViews.end(); it++)
 	{
 		cursorMap[it->first] = it->second->getCursor();
@@ -442,7 +450,7 @@ void ViewController::reloadAll()
 		mSystemListView->goToSystem(mState.getSystem(), false);
 		mCurrentView = mSystemListView;
 	}else{
-		goToSystemView(SystemData::sSystemVector.front());
+		goToSystemView(SystemManager::getInstance()->getSystems().front());
 	}
 
 	updateHelpPrompts();
@@ -460,7 +468,7 @@ void ViewController::reloadGamesLists()
 		mSystemListView->goToSystem(mState.getSystem(), false);
 		mCurrentView = mSystemListView;
 	}else{
-		goToSystemView(SystemData::sSystemVector.front());
+		goToSystemView(SystemManager::getInstance()->getSystems().front());
 	}
 }
 

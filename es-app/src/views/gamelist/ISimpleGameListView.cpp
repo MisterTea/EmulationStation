@@ -5,16 +5,16 @@
 #include "views/ViewController.h"
 #include "Sound.h"
 #include "Settings.h"
-#include "Gamelist.h"
+#include "GamelistDB.h"
 
-ISimpleGameListView::ISimpleGameListView(Window* window, FileData* root) : IGameListView(window, root),
+ISimpleGameListView::ISimpleGameListView(Window* window, const FileData& root) : IGameListView(window, root),
 mHeaderText(window), mHeaderImage(window), mBackground(window), mThemeExtras(window), mFavoriteChange(false)
 {
 	mHeaderText.setText("Logo Text");
 	mHeaderText.setSize(mSize.x(), 0);
 	mHeaderText.setPosition(0, 0);
 	mHeaderText.setAlignment(ALIGN_CENTER);
-	
+
 	mHeaderImage.setResize(0, mSize.y() * 0.185f);
 	mHeaderImage.setOrigin(0.5f, 0.0f);
 	mHeaderImage.setPosition(mSize.x() / 2, 0);
@@ -24,6 +24,8 @@ mHeaderText(window), mHeaderImage(window), mBackground(window), mThemeExtras(win
 	addChild(&mHeaderText);
 	addChild(&mBackground);
 	addChild(&mThemeExtras);
+
+	mCursorStack.push(mRoot);
 }
 
 void ISimpleGameListView::onThemeChanged(const std::shared_ptr<ThemeData>& theme)
@@ -44,13 +46,20 @@ void ISimpleGameListView::onThemeChanged(const std::shared_ptr<ThemeData>& theme
 	}
 }
 
-void ISimpleGameListView::onFileChanged(FileData* file, FileChangeType change)
+// we could be tricky here to be efficient;
+// but this shouldn't happen very often so we'll just always repopulate
+void ISimpleGameListView::onFilesChanged()
 {
-	// we could be tricky here to be efficient;
-	// but this shouldn't happen very often so we'll just always repopulate
-	FileData* cursor = getCursor();
-	populateList(cursor->getParent()->getChildren());
+	FileData cursor = getCursor();
+	FileData parent = mCursorStack.top();
+	populateList(parent.getChildren());
 	setCursor(cursor);
+  updateInfoPanel();
+}
+
+void ISimpleGameListView::onMetaDataChanged(const FileData& file)
+{
+	onFilesChanged();
 }
 
 bool ISimpleGameListView::input(InputConfig* config, Input input)
@@ -59,65 +68,65 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
 	{
 		if(config->isMappedTo("a", input))
 		{
-			FileData* cursor = getCursor();
-			if(cursor->getType() == GAME)
+			FileData cursor = getCursor();
+			if(cursor.getType() == GAME)
 			{
 				//Sound::getFromTheme(getTheme(), getName(), "launch")->play();
 				launch(cursor);
 			}else{
 				// it's a folder
-				if(cursor->getChildren().size() > 0)
+				if(cursor.getChildren().size() > 0)
 				{
 					mCursorStack.push(cursor);
-					populateList(cursor->getChildren());
+					populateList(cursor.getChildren());
 				}
 			}
-				
+
 			return true;
 		}else if(config->isMappedTo("b", input))
 		{
-			if(mCursorStack.size())
+			if(mCursorStack.top() != mRoot)
 			{
-				populateList(mCursorStack.top()->getParent()->getChildren());
-				setCursor(mCursorStack.top());
+				FileData old_cursor = mCursorStack.top();
 				mCursorStack.pop();
+				populateList(mCursorStack.top().getChildren());
+				setCursor(old_cursor);
+
 				//Sound::getFromTheme(getTheme(), getName(), "back")->play();
 			}else{
 				onFocusLost();
 
 				if (mFavoriteChange)
 				{
-					ViewController::get()->setInvalidGamesList(getCursor()->getSystem());
+					ViewController::get()->setInvalidGamesList(getCursor().getSystem());
 					mFavoriteChange = false;
 				}
 
-				ViewController::get()->goToSystemView(getCursor()->getSystem());
+				ViewController::get()->goToSystemView(mRoot.getSystem());
 			}
 
 			return true;
 		}else if (config->isMappedTo("y", input))
 		{
-			FileData* cursor = getCursor();
-			if (cursor->getSystem()->getHasFavorites())
+			FileData cursor = getCursor();
+			if (cursor.getSystem()->getHasFavorites())
 			{
-				if (cursor->getType() == GAME)
+				if (cursor.getType() == GAME)
 				{
 					mFavoriteChange = true;
-					MetaDataList* md = &cursor->metadata;
-					std::string value = md->get("favorite");
+					MetaDataMap md = cursor.get_metadata();
+					std::string value = md.get("favorite");
 					if (value.compare("no") == 0)
 					{
-						md->set("favorite", "yes");
+						md.set("favorite", "yes");
 					}
 					else
 					{
-						md->set("favorite", "no");
+						md.set("favorite", "no");
 					}
+          cursor.set_metadata(md);
 
-					FileData* cursor = getCursor();
-					populateList(cursor->getParent()->getChildren());
-					setCursor(cursor);
-					updateInfoPanel();
+          onFilesChanged();
 				}
 			}
 		}else if(config->isMappedTo("right", input))
@@ -127,7 +136,7 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
 				onFocusLost();
 				if (mFavoriteChange)
 				{
-					ViewController::get()->setInvalidGamesList(getCursor()->getSystem());
+					ViewController::get()->setInvalidGamesList(getCursor().getSystem());
 					mFavoriteChange = false;
 				}
 				ViewController::get()->goToNextGameList();
@@ -140,7 +149,7 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
 				onFocusLost();
 				if (mFavoriteChange)
 				{
-					ViewController::get()->setInvalidGamesList(getCursor()->getSystem());
+					ViewController::get()->setInvalidGamesList(getCursor().getSystem());
 					mFavoriteChange = false;
 				}
 				ViewController::get()->goToPrevGameList();

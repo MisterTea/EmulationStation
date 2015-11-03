@@ -8,37 +8,35 @@
 class ISimpleGameListView : public IGameListView
 {
 public:
-	ISimpleGameListView(Window* window, FileData* root);
+	ISimpleGameListView(Window* window, const FileData& root);
 	virtual ~ISimpleGameListView() {}
 
-	// Called when a new file is added, a file is removed, a file's metadata changes, or a file's children are sorted.
-	// NOTE: FILE_SORTED is only reported for the topmost FileData, where the sort started.
-	//       Since sorts are recursive, that FileData's children probably changed too.
-	virtual void onFileChanged(FileData* file, FileChangeType change);
-	
+	virtual void onFilesChanged();
+	virtual void onMetaDataChanged(const FileData& file);
+
 	// Called whenever the theme changes.
 	virtual void onThemeChanged(const std::shared_ptr<ThemeData>& theme);
 
-	virtual FileData* getCursor() = 0;
-	virtual void setCursor(FileData*) = 0;
+	virtual const FileData& getCursor() = 0;
+	virtual void setCursor(const FileData& file) = 0;
 
 	virtual bool input(InputConfig* config, Input input) override;
 
 	virtual inline void updateInfoPanel() override {}
 
-	virtual inline void populateList(const std::vector<FileData*>& files) override {}
+	virtual inline void populateList(const std::vector<FileData>& files) override {}
 
 protected:
-	virtual void launch(FileData* game) = 0;
+	virtual void launch(FileData& game) = 0;
 
 	TextComponent mHeaderText;
 	ImageComponent mHeaderImage;
 	ImageComponent mBackground;
-	
+
 	ThemeExtras mThemeExtras;
 
-	std::stack<FileData*> mCursorStack;
-	
+	std::stack<FileData> mCursorStack;
+
 private:
    bool mFavoriteChange;
 };

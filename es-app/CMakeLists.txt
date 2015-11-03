@@ -2,15 +2,14 @@ project("emulationstation")
 
 set(ES_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EmulationStation.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ESException.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FileData.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/FileSorts.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MetaData.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PlatformId.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ScraperCmdLine.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SystemData.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SystemManager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/VolumeControl.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Gamelist.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/NetworkThread.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/GamelistDB.h
 
     # GuiComponents
     ${CMAKE_CURRENT_SOURCE_DIR}/src/components/AsyncReqComponent.h
@@ -20,7 +19,6 @@ set(ES_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/components/FileSystemSelectorComponent.h
 
     # Guis
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiFastSelect.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiMetaDataEd.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiGameScraper.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiGamelistOptions.h
@@ -55,17 +53,14 @@ set(ES_HEADERS
 
 set(ES_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FileData.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/FileSorts.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MameNameMap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MetaData.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PlatformId.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ScraperCmdLine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SystemData.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SystemManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/VolumeControl.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Gamelist.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/NetworkThread.cpp
-
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/GamelistDB.cpp
 
     # GuiComponents
     ${CMAKE_CURRENT_SOURCE_DIR}/src/components/AsyncReqComponent.cpp
@@ -74,7 +69,6 @@ set(ES_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/components/FileSystemSelectorComponent.cpp
 
     # Guis
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiFastSelect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiMetaDataEd.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiGameScraper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiGamelistOptions.cpp
@@ -119,7 +113,7 @@ target_link_libraries(emulationstation ${COMMON_LIBRARIES} es-core)
 
 # special properties for Windows builds
 if(MSVC)
-    # Always compile with the "WINDOWS" subsystem to avoid console window flashing at startup 
+    # Always compile with the "WINDOWS" subsystem to avoid console window flashing at startup
     # when --debug is not set (see es-core/src/main.cpp for explanation).
     # The console will still be shown if launched with --debug.
     # Note that up to CMake 2.8.10 this feature is broken: http://public.kitware.com/Bug/view.php?id=12566

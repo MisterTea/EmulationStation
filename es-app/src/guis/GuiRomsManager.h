@@ -19,6 +19,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
 */
+#if 0
 #pragma once
 
 #include "components/MenuComponent.h"
@@ -65,3 +66,4 @@ private:
 	void editCurrentPlatformExternalRomsPath();
 	void showCurrentPlatformRomsManager();
 };
+#endif
