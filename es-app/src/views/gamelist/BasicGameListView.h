@@ -14,7 +14,7 @@ public:
 	// Called when an existing FileData's metadata changes
 	virtual void onMetaDataChanged(const FileData& file) override;
 
-	virtual void onThemeChanged(const std::shared_ptr<ThemeData>& theme);
+	virtual void onThemeChanged(const std::shared_ptr<ThemeData>& theme) override;
 
 	virtual const FileData& getCursor() override;
 	virtual void setCursor(const FileData& file) override;

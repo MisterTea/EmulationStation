@@ -24,7 +24,7 @@ protected:
 	virtual std::vector<HelpPrompt> getHelpPrompts() override;
 
 private:
-	void updateInfoPanel();
+	void updateInfoPanel() override;
 
 	void initMDLabels();
 	void initMDValues();

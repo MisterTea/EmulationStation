@@ -11,14 +11,11 @@ public:
 	ISimpleGameListView(Window* window, const FileData& root);
 	virtual ~ISimpleGameListView() {}
 
-	virtual void onFilesChanged();
-	virtual void onMetaDataChanged(const FileData& file);
+	virtual void onFilesChanged() override;
+	virtual void onMetaDataChanged(const FileData& file) override;
 
 	// Called whenever the theme changes.
-	virtual void onThemeChanged(const std::shared_ptr<ThemeData>& theme);
-
-	virtual const FileData& getCursor() = 0;
-	virtual void setCursor(const FileData& file) = 0;
+	virtual void onThemeChanged(const std::shared_ptr<ThemeData>& theme) override;
 
 	virtual bool input(InputConfig* config, Input input) override;
 

@@ -230,7 +230,7 @@ void DetailedGameListView::updateInfoPanel()
 	}else{
 		MetaDataMap metadata = file->get_metadata();
 
-    if (megadata.get("image").length()) {
+    if (metadata.get("image").length()) {
       mImage.setImage(getHomePath() + metadata.get("image"));
     } else {
       mImage.setImage("");
