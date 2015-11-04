@@ -5,6 +5,7 @@
 #include <sstream>
 #include <map>
 #include <boost/assign.hpp>
+#include "SqliteHelper.h"
 
 namespace fs = boost::filesystem;
 
@@ -52,72 +53,6 @@ const std::vector<FileSort>& getFileSorts()
 	return sFileSorts;
 }
 
-// super simple RAII wrapper for sqlite3
-// prepared statement, can be used just like an sqlite3_stmt* thanks to overloaded operator
-class SQLPreparedStmt
-{
-public:
-	SQLPreparedStmt(sqlite3* db, const char* stmt) : mDB(db), mStmt(NULL) {
-		if(sqlite3_prepare_v2(db, stmt, strlen(stmt), &mStmt, NULL))
-			throw DBException() << "Error creating prepared stmt \"" << stmt << "\".\n\t" << sqlite3_errmsg(db);
-	}
-
-	SQLPreparedStmt(sqlite3* db, const std::string& stmt) : SQLPreparedStmt(db, stmt.c_str()) {};
-
-	int step() { return sqlite3_step(mStmt); }
-
-	void step_expected(int expected) {
-		int result = step();
-		if(result != expected)
-			throw DBException() << "Step failed (got " << result << ", expected " << expected << "!\n\t" << sqlite3_errmsg(mDB);
-	}
-
-	void reset() { 
-		if(sqlite3_reset(mStmt))
-			throw DBException() << "Error resetting statement!\n\t" << sqlite3_errmsg(mDB);
-	}
-
-	~SQLPreparedStmt() {
-		if(mStmt)
-			sqlite3_finalize(mStmt);
-	}
-
-	operator sqlite3_stmt*() { return mStmt; }
-
-private:
-	sqlite3* mDB; // used for error messages
-	sqlite3_stmt* mStmt;
-};
-
-// encapsulates a transaction that cannot outlive the lifetime of this object
-class SQLTransaction
-{
-public:
-	SQLTransaction(sqlite3* db) : mDB(db) {
-		if(sqlite3_exec(mDB, "BEGIN TRANSACTION", NULL, NULL, NULL))
-			throw DBException() << "Error beginning transaction.\n\t" << sqlite3_errmsg(mDB);
-	}
-
-	void commit() {
-		if(!mDB)
-			throw DBException() << "Transaction already committed!";
-
-		if(sqlite3_exec(mDB, "COMMIT TRANSACTION", NULL, NULL, NULL))
-			throw DBException() << "Error committing transaction.\n\t" << sqlite3_errmsg(mDB);
-
-		mDB = NULL;
-	}
-
-	~SQLTransaction() {
-		if(mDB)
-			commit();
-	}
-
-private:
-	sqlite3* mDB;
-};
-
-
 GamelistDB::GamelistDB(const std::string& path) : mDB(NULL)
 {
 	openDB(path.c_str());
@@ -143,7 +78,7 @@ int match_start(const char* file, const char* dir)
 				else
 					return -1;
 			}
-			
+
 			return i;
 		}
 
@@ -411,7 +346,7 @@ void add_file(const char* fileid, FileType filetype, const SystemData* system, s
 // - if it's a folder, recurse into it. if that recursion returns true, also mark this folder as having a file.
 // - if this folder is marked as having a file at return time, add it to the database.
 
-bool populate_recursive(const fs::path& relativeTo, const std::vector<std::string>& extensions, 
+bool populate_recursive(const fs::path& relativeTo, const std::vector<std::string>& extensions,
 	const fs::path& start_dir, const SystemData* system, sqlite3* db, sqlite3_stmt* insert_stmt)
 {
 	// make sure that this isn't a symlink to a thing we already have
@@ -463,7 +398,7 @@ bool populate_recursive(const fs::path& relativeTo, const std::vector<std::strin
 
 void GamelistDB::addMissingFiles(const SystemData* system)
 {
-	const std::string& relativeTo = system->getStartPath(); 
+	const std::string& relativeTo = system->getStartPath();
 	const std::vector<std::string>& extensions = system->getExtensions();
 
 	// ?1 = fileid, ?2 = filetype, ?3 = systemid
@@ -484,7 +419,7 @@ void GamelistDB::updateExists(const SystemData* system)
 
 	SQLPreparedStmt readStmt(mDB, "SELECT fileid FROM files WHERE systemid = ?1");
 	sqlite3_bind_text(readStmt, 1, system->getName().c_str(), system->getName().size(), SQLITE_STATIC);
-	
+
 	SQLPreparedStmt updateStmt(mDB, "UPDATE files SET fileexists = ?1 WHERE fileid = ?2 AND systemid = ?3");
 	sqlite3_bind_text(updateStmt, 3, system->getName().c_str(), system->getName().size(), SQLITE_STATIC);
 
@@ -576,7 +511,7 @@ void GamelistDB::setFileData(const std::string& fileID, const std::string& syste
 	stmt.step_expected(SQLITE_DONE);
 }
 
-std::vector<FileData> GamelistDB::getChildrenOf(const std::string& fileID, SystemData* system, 
+std::vector<FileData> GamelistDB::getChildrenOf(const std::string& fileID, SystemData* system,
 	bool immediateChildrenOnly, bool includeFolders, const FileSort* sortType)
 {
 	const std::string& systemID = system->getName();
@@ -630,7 +565,7 @@ void GamelistDB::importXML(const SystemData* system, const std::string& xml_path
 		throw ESException() << "Could not find <gameList> node!";
 
 	const fs::path relativeTo = system->getStartPath();
-	
+
 	unsigned int skipCount = 0;
 	const char* tagList[2] = { "game", "folder" };
 	MetaDataListType metadataTypeList[2] = { GAME_METADATA, FOLDER_METADATA };
@@ -665,7 +600,7 @@ void GamelistDB::importXML(const SystemData* system, const std::string& xml_path
 					std::string value = md.text().get();
 					if(iter->type == MD_IMAGE_PATH)
 						value = resolvePath(value, relativeTo, true).generic_string();
-					
+
 					// if it's a time/date, convert it into the SQLite format
 					if(iter->type == MD_TIME || iter->type == MD_DATE)
 						value = ptime_to_string(string_to_ptime(value, LEGACY_TIME_STRING_FORMAT), SQLITE_TIME_STRING_FORMAT);
@@ -692,7 +627,7 @@ void GamelistDB::exportXML(const SystemData* system, const std::string& xml_path
 
 	SQLPreparedStmt readStmt(mDB, "SELECT * FROM files WHERE systemid = ?1");
 	sqlite3_bind_text(readStmt, 1, system->getName().c_str(), system->getName().size(), SQLITE_STATIC);
-	
+
 	std::string relativeTo = system->getStartPath();
 	while(readStmt.step() != SQLITE_DONE)
 	{
@@ -714,7 +649,7 @@ void GamelistDB::exportXML(const SystemData* system, const std::string& xml_path
 		{
 			const char* col = (const char*)sqlite3_column_name(readStmt, i);
 			const char* value = (const char*)sqlite3_column_text(readStmt, i);
-			
+
 			for(auto it = mdd.begin(); it != mdd.end(); it++)
 			{
 				if(it->key == col)

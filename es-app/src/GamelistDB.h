@@ -8,8 +8,6 @@
 
 class SystemData;
 
-class DBException : public ESException {};
-
 boost::filesystem::path fileIDToPath(const std::string& fileID, const SystemData* system);
 
 /*
@@ -20,7 +18,7 @@ boost::filesystem::path fileIDToPath(const std::string& fileID, const SystemData
  [file ID] [system ID] [file type] [file exists] [metadata 0] [metadata 1] [metadata 2] ... etc.
  The primary key for this table is the pair (file ID, system ID).
 
- File ID and system ID are strings. File type is an int. File exists is a boolean. 
+ File ID and system ID are strings. File type is an int. File exists is a boolean.
  Metadata types correspond to the MetaDataDecl vector.
 
  File ID is in the following format:
@@ -47,16 +45,16 @@ public:
 	void addMissingFiles(const SystemData* system);
 	void updateExists(const SystemData* system);
 	void updateExists(const FileData& file); // update the fileexists flag for a particular file
-	
+
 	// returns all metadata for a given fileID
 	MetaDataMap getFileData(const std::string& fileID, const std::string& systemID) const;
 
 	// Sets all metadata for a given fileID (overwrites existing data).
 	void setFileData(const std::string& fileID, const std::string& systemID, FileType type, const MetaDataMap& metadata);
 
-	// returns either all immediate children (immediateChildrenOnly) OR 
+	// returns either all immediate children (immediateChildrenOnly) OR
 	// all children, children of children, etc. of file ID (immedateChildrenOnly = false)
-	std::vector<FileData> getChildrenOf(const std::string& fileID, SystemData* system, 
+	std::vector<FileData> getChildrenOf(const std::string& fileID, SystemData* system,
 		bool immediateChildrenOnly, bool includeFolders, const FileSort* sortType = NULL);
 
 	void importXML(const SystemData* system, const std::string& xml_path);

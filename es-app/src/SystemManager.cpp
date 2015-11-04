@@ -85,7 +85,7 @@ void SystemManager::loadConfig()
 	for(pugi::xml_node system = systemList.child("system"); system; system = system.next_sibling("system"))
 	{
 		std::string name, fullname, path, cmd, themeFolder;
-		PlatformIds::PlatformId platformId = PlatformIds::PLATFORM_UNKNOWN;
+		std::string platformId = "unknown";
 
 		name = system.child("name").text().get();
 		fullname = system.child("fullname").text().get();
@@ -98,27 +98,7 @@ void SystemManager::loadConfig()
 
 		// platform id list
 		const char* platformList = system.child("platform").text().get();
-		std::vector<std::string> platformStrs = readList(platformList);
-		std::vector<PlatformIds::PlatformId> platformIds;
-		for(auto it = platformStrs.begin(); it != platformStrs.end(); it++)
-		{
-			const char* str = it->c_str();
-			PlatformIds::PlatformId platformId = PlatformIds::getPlatformId(str);
-
-			if(platformId == PlatformIds::PLATFORM_IGNORE)
-			{
-				// when platform is ignore, do not allow other platforms
-				platformIds.clear();
-				platformIds.push_back(platformId);
-				break;
-			}
-
-			// if there appears to be an actual platform ID supplied but it didn't match the list, warn
-			if(str != NULL && str[0] != '\0' && platformId == PlatformIds::PLATFORM_UNKNOWN)
-				LOG(LogWarning) << "  Unknown platform for system \"" << name << "\" (platform \"" << str << "\" from list \"" << platformList << "\")";
-			else if(platformId != PlatformIds::PLATFORM_UNKNOWN)
-				platformIds.push_back(platformId);
-		}
+		std::vector<std::string> platformIds = readList(platformList);
 
 		// theme folder
 		themeFolder = system.child("theme").text().as_string(name.c_str());

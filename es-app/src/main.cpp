@@ -162,6 +162,8 @@ void delete_singletons_on_exit()
 	delete SystemManager::getInstance();
 }
 
+std::string ExecutablePath = "";
+
 int setLocale(char * argv1)
 {
  	char path_save[PATH_MAX];
@@ -188,7 +190,7 @@ int setLocale(char * argv1)
 
     	boost::locale::generator gen;
 
-	std::string localeDir = abs_exe_path;
+	std::string localeDir = ExecutablePath = abs_exe_path;
 	localeDir += "/locale/lang";
 	LOG(LogInfo) << "Setting local directory to " << localeDir;
     	// Specify location of dictionaries
