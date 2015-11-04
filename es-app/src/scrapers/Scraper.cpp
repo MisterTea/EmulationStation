@@ -202,7 +202,7 @@ void ImageDownloadHandle::update()
 	}
 
 	// resize it
-	if(!resizeImage(mSavePath, mMaxWidth, mMaxHeight))
+	if(!resizeImage(getHomePath() + mSavePath, mMaxWidth, mMaxHeight))
 	{
 		setError("Error saving resized image. Out of memory? Disk full?");
 		return;
