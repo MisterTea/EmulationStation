@@ -277,13 +277,13 @@ std::string getSaveAsPath(const ScraperSearchParams& params, const std::string& 
 
 	std::string path = "/.emulationstation/downloaded_images/";
 
-	if(!boost::filesystem::exists(path))
-		boost::filesystem::create_directory(path);
+	if(!boost::filesystem::exists(getHomePath() + path))
+		boost::filesystem::create_directory(getHomePath() + path);
 
 	path += subdirectory + "/";
 
-	if(!boost::filesystem::exists(path))
-		boost::filesystem::create_directory(path);
+	if(!boost::filesystem::exists(getHomePath() + path))
+		boost::filesystem::create_directory(getHomePath() + path);
 
 	size_t dot = url.find_last_of('.');
 	std::string ext;
