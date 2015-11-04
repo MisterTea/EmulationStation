@@ -48,8 +48,18 @@ HttpReq::HttpReq(const std::string& url)
 		return;
 	}
 
+  //set a timeout
+	CURLcode err = curl_easy_setopt(mHandle, CURLOPT_TIMEOUT, 10L);
+	if(err != CURLE_OK)
+	{
+		mStatus = REQ_IO_ERROR;
+		onError(curl_easy_strerror(err));
+		return;
+	}
+
+
 	//set the url
-	CURLcode err = curl_easy_setopt(mHandle, CURLOPT_URL, url.c_str());
+	err = curl_easy_setopt(mHandle, CURLOPT_URL, url.c_str());
 	if(err != CURLE_OK)
 	{
 		mStatus = REQ_IO_ERROR;
