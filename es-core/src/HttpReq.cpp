@@ -32,7 +32,7 @@ std::string HttpReq::urlEncode(const std::string &s)
 bool HttpReq::isUrl(const std::string& str)
 {
 	//the worst guess
-	return (!str.empty() && !boost::filesystem::exists(str) && 
+	return (!str.empty() && !boost::filesystem::exists(str) &&
 		(str.find("http://") != std::string::npos || str.find("https://") != std::string::npos || str.find("www.") != std::string::npos));
 }
 
@@ -133,7 +133,7 @@ HttpReq::Status HttpReq::status()
 			if(msg->msg == CURLMSG_DONE)
 			{
 				HttpReq* req = s_requests[msg->easy_handle];
-				
+
 				if(req == NULL)
 				{
 					LOG(LogError) << "Cannot find easy handle!";
@@ -184,5 +184,5 @@ size_t HttpReq::write_content(void* buff, size_t size, size_t nmemb, void* req_p
 //used as a curl callback
 /*int HttpReq::update_progress(void* req_ptr, double dlTotal, double dlNow, double ulTotal, double ulNow)
 {
-	
+
 }*/

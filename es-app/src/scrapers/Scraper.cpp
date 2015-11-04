@@ -167,7 +167,7 @@ std::unique_ptr<ImageDownloadHandle> downloadImageAsync(const std::string& url, 
 }
 
 ImageDownloadHandle::ImageDownloadHandle(const std::string& url, const std::string& path, int maxWidth, int maxHeight) :
-	mSavePath(path), mMaxWidth(maxWidth), mMaxHeight(maxHeight), mReq(new HttpReq(url))
+	mSavePath(path), mMaxWidth(maxWidth), mMaxHeight(maxHeight), mUrl(url), mReq(new HttpReq(url)), mAttempt(0)
 {
 }
 
@@ -178,10 +178,16 @@ void ImageDownloadHandle::update()
 
 	if(mReq->status() != HttpReq::REQ_SUCCESS)
 	{
-		std::stringstream ss;
-		ss << "Network error: " << mReq->getErrorMsg();
-		setError(ss.str());
-		return;
+    mAttempt++;
+    if (mAttempt>=3) {
+      std::stringstream ss;
+      ss << "Network error: " << mReq->getErrorMsg();
+      setError(ss.str());
+      return;
+    } else {
+      mReq.reset(new HttpReq(mUrl));
+      return;
+    }
 	}
 
 	// download is done, save it to disk
