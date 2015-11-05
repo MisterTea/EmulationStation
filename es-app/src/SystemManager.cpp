@@ -128,7 +128,8 @@ void SystemManager::loadConfig()
 		}
 	}
 
-	updateDatabase();
+  //JJG: Why is this here?  We are already updating in the loop above
+	//updateDatabase();
 }
 
 void SystemManager::writeExampleConfig(const fs::path& path)
