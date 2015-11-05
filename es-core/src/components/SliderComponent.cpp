@@ -18,13 +18,13 @@ SliderComponent::SliderComponent(Window* window, float min, float max, float inc
 
 	mKnob.setOrigin(0.5f, 0.5f);
 	mKnob.setImage(":/slider_knob.svg");
-	
+
 	setSize(Renderer::getScreenWidth() * 0.15f, Font::get(FONT_SIZE_MEDIUM)->getLetterHeight());
 }
 
 bool SliderComponent::input(InputConfig* config, Input input)
 {
-	if(config->isMappedTo("left", input))
+	if(config->isMappedTo(INPUT_LEFT, input))
 	{
 		if(input.value)
 			setValue(mValue - mSingleIncrement);
@@ -33,7 +33,7 @@ bool SliderComponent::input(InputConfig* config, Input input)
 		mMoveAccumulator = -MOVE_REPEAT_DELAY;
 		return true;
 	}
-	if(config->isMappedTo("right", input))
+	if(config->isMappedTo(INPUT_RIGHT, input))
 	{
 		if(input.value)
 			setValue(mValue + mSingleIncrement);
@@ -57,7 +57,7 @@ void SliderComponent::update(int deltaTime)
 			mMoveAccumulator -= MOVE_REPEAT_RATE;
 		}
 	}
-	
+
 	GuiComponent::update(deltaTime);
 }
 
@@ -78,7 +78,7 @@ void SliderComponent::render(const Eigen::Affine3f& parentTrans)
 
 	//render knob
 	mKnob.render(trans);
-	
+
 	GuiComponent::renderChildren(trans);
 }
 
@@ -102,7 +102,7 @@ void SliderComponent::onSizeChanged()
 {
 	if(!mSuffix.empty())
 		mFont = Font::get((int)(mSize.y()), FONT_PATH_LIGHT);
-	
+
 	onValueChanged();
 }
 

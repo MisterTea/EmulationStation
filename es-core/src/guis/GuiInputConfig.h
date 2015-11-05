@@ -4,6 +4,7 @@
 #include "components/NinePatchComponent.h"
 #include "components/ComponentGrid.h"
 #include "components/ComponentList.h"
+#include "InputConfig.h"
 
 class TextComponent;
 
@@ -23,8 +24,8 @@ private:
 	void setNotDefined(const std::shared_ptr<TextComponent>& text); // set text to -NOT DEFINED- + greyed out
 	void setAssignedTo(const std::shared_ptr<TextComponent>& text, Input input); // set text to "BUTTON 2"/"AXIS 2+", etc.
 
-	bool assign(Input input, int inputId, int inputIndex);
-	void clearAssignment(int inputId);
+	bool assign(Input input, InputCategory inputId, int inputIndex);
+	void clearAssignment(InputCategory inputId);
 
 	void rowDone();
 
@@ -45,6 +46,6 @@ private:
 	bool mHoldingInput;
 	Input mHeldInput;
 	int mHeldTime;
-	int mHeldInputId;
+	InputCategory mHeldInputId;
 	int mHeldInputRowIndex;
 };

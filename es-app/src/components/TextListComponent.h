@@ -231,31 +231,31 @@ bool TextListComponent<T>::input(InputConfig* config, Input input)
 	{
 		if(input.value != 0)
 		{
-			if(config->isMappedTo("down", input))
+			if(config->isMappedTo(INPUT_DOWN, input))
 			{
 				listInput(1);
 				return true;
 			}
 
-			if(config->isMappedTo("up", input))
+			if(config->isMappedTo(INPUT_UP, input))
 			{
 				listInput(-1);
 				return true;
 			}
-			if(config->isMappedTo("pagedown", input))
+			if(config->isMappedTo(INPUT_R1, input))
 			{
 				listInput(10);
 				return true;
 			}
 
-			if(config->isMappedTo("pageup", input))
+			if(config->isMappedTo(INPUT_L1, input))
 			{
 				listInput(-10);
 				return true;
 			}
 		}else{
-			if(config->isMappedTo("down", input) || config->isMappedTo("up", input) ||
-				config->isMappedTo("pagedown", input) || config->isMappedTo("pageup", input))
+			if(config->isMappedTo(INPUT_DOWN, input) || config->isMappedTo(INPUT_UP, input) ||
+				config->isMappedTo(INPUT_R1, input) || config->isMappedTo(INPUT_L1, input))
 			{
 				stopScrolling();
 			}

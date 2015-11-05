@@ -19,6 +19,39 @@ enum InputType
 	TYPE_COUNT
 };
 
+enum InputCategory {
+  INPUT_UP,
+  INPUT_DOWN,
+  INPUT_LEFT,
+  INPUT_RIGHT,
+  INPUT_JOYSTICK1_Y,
+  INPUT_JOYSTICK1_X,
+  INPUT_JOYSTICK2_Y,
+  INPUT_JOYSTICK2_X,
+  INPUT_4B_LEFT,
+  INPUT_4B_DOWN,
+  INPUT_4B_RIGHT,
+  INPUT_4B_UP,
+  INPUT_6B_BOTTOM_LEFT,
+  INPUT_6B_BOTTOM_CENTER,
+  INPUT_6B_BOTTOM_RIGHT,
+  INPUT_6B_TOP_LEFT,
+  INPUT_6B_TOP_CENTER,
+  INPUT_6B_TOP_RIGHT,
+  INPUT_START,
+  INPUT_SELECT,
+  INPUT_L1,
+  INPUT_R1,
+  INPUT_L2,
+  INPUT_R2,
+  INPUT_L3,
+  INPUT_R3,
+  INPUT_HOTKEY,
+  INPUT_END
+};
+
+std::string inputCategoryToString(InputCategory category);
+
 struct Input
 {
 public:
@@ -41,17 +74,17 @@ public:
 	{
 	}
 
-	std::string getHatDir(int val)
+	InputCategory getHatDir(int val)
 	{
 		if(val & SDL_HAT_UP)
-			return "up";
+			return INPUT_UP;
 		else if(val & SDL_HAT_DOWN)
-			return "down";
+			return INPUT_DOWN;
 		else if(val & SDL_HAT_LEFT)
-			return "left";
+			return INPUT_LEFT;
 		else if(val & SDL_HAT_RIGHT)
-			return "right";
-		return "neutral?";
+			return INPUT_RIGHT;
+		return INPUT_END;
 	}
 
 	std::string string()
@@ -86,20 +119,20 @@ public:
 	InputConfig(int deviceId, int deviceIndex, const std::string& deviceName, const std::string& deviceGUID);
 
 	void clear();
-	void mapInput(const std::string& name, Input input);
-	void unmapInput(const std::string& name); // unmap all Inputs mapped to this name
+	void mapInput(InputCategory name, Input input);
+	void unmapInput(InputCategory name); // unmap all Inputs mapped to this name
 
 	inline int getDeviceId() const { return mDeviceId; };
-        
+
 	inline int getDeviceIndex() const { return mDeviceIndex; };
 	inline const std::string& getDeviceName() { return mDeviceName; }
 	inline const std::string& getDeviceGUIDString() { return mDeviceGUID; }
 
 	//Returns true if Input is mapped to this name, false otherwise.
-	bool isMappedTo(const std::string& name, Input input);
+	bool isMappedTo(InputCategory name, Input input);
 
 	//Returns a list of names this input is mapped to.
-	std::vector<std::string> getMappedTo(Input input);
+	std::vector<InputCategory> getMappedTo(Input input);
 
 	void loadFromXML(pugi::xml_node root);
 	void writeToXML(pugi::xml_node parent);
@@ -109,9 +142,9 @@ public:
 private:
 	// Returns true if there is an Input mapped to this name, false otherwise.
 	// Writes Input mapped to this name to result if true.
-	bool getInputByName(const std::string& name, Input* result);
+	bool getInputByName(InputCategory name, Input* result);
 
-	std::map<std::string, Input> mNameMap;
+	std::map<InputCategory, Input> mNameMap;
 	const int mDeviceId;
 	const int mDeviceIndex;
 	const std::string mDeviceName;

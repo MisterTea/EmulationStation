@@ -8,11 +8,11 @@
 
 #define HORIZONTAL_PADDING_PX 20
 
-GuiMsgBox::GuiMsgBox(Window* window, const std::string& text, 
+GuiMsgBox::GuiMsgBox(Window* window, const std::string& text,
 	const std::string& name1, const std::function<void()>& func1,
-	const std::string& name2, const std::function<void()>& func2, 
+	const std::string& name2, const std::function<void()>& func2,
 	const std::string& name3, const std::function<void()>& func3,
-        Alignment align) : GuiComponent(window), 
+        Alignment align) : GuiComponent(window),
 	mBackground(window, ":/frame.png"), mGrid(window, Eigen::Vector2i(1, 2))
 {
 	float width = Renderer::getScreenWidth() * 0.6f; // max width
@@ -70,14 +70,14 @@ GuiMsgBox::GuiMsgBox(Window* window, const std::string& text,
 bool GuiMsgBox::input(InputConfig* config, Input input)
 {
 	// special case for when GuiMsgBox comes up to report errors before anything has been configured
-	if(config->getDeviceId() == DEVICE_KEYBOARD && !config->isConfigured() && input.value && 
+	if(config->getDeviceId() == DEVICE_KEYBOARD && !config->isConfigured() && input.value &&
 		(input.id == SDLK_RETURN || input.id == SDLK_ESCAPE || input.id == SDLK_SPACE))
 	{
 		mAcceleratorFunc();
 		return true;
 	}
 
-	if(mAcceleratorFunc && config->isMappedTo("b", input) && input.value != 0)
+	if(mAcceleratorFunc && config->isMappedTo(INPUT_4B_DOWN, input) && input.value != 0)
 	{
 		mAcceleratorFunc();
 		return true;
@@ -90,7 +90,7 @@ void GuiMsgBox::onSizeChanged()
 {
 	mGrid.setSize(mSize);
 	mGrid.setRowHeightPerc(1, mButtonGrid->getSize().y() / mSize.y());
-	
+
 	// update messagebox size
 	mMsg->setSize(mSize.x() - HORIZONTAL_PADDING_PX*2, mGrid.getRowHeight(0));
 	mGrid.onSizeChanged();

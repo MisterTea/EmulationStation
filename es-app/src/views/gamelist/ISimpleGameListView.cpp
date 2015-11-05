@@ -66,7 +66,7 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
 {
 	if(input.value != 0)
 	{
-		if(config->isMappedTo("a", input))
+		if(config->isMappedTo(INPUT_4B_LEFT, input))
 		{
 			FileData cursor = getCursor();
 			if(cursor.getType() == GAME)
@@ -83,7 +83,7 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
 			}
 
 			return true;
-		}else if(config->isMappedTo("b", input))
+		}else if(config->isMappedTo(INPUT_4B_DOWN, input))
 		{
 			if(mCursorStack.top() != mRoot)
 			{
@@ -106,7 +106,7 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
 			}
 
 			return true;
-		}else if (config->isMappedTo("y", input))
+		}else if (config->isMappedTo(INPUT_4B_UP, input))
 		{
 			FileData cursor = getCursor();
 			if (cursor.getSystem()->getHasFavorites())
@@ -129,7 +129,7 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
           onFilesChanged();
 				}
 			}
-		}else if(config->isMappedTo("right", input))
+		}else if(config->isMappedTo(INPUT_RIGHT, input))
 		{
 			if(Settings::getInstance()->getBool("QuickSystemSelect"))
 			{
@@ -142,7 +142,7 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
 				ViewController::get()->goToNextGameList();
 				return true;
 			}
-		}else if(config->isMappedTo("left", input))
+		}else if(config->isMappedTo(INPUT_LEFT, input))
 		{
 			if(Settings::getInstance()->getBool("QuickSystemSelect"))
 			{

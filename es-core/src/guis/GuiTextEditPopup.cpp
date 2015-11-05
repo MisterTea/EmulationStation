@@ -3,7 +3,7 @@
 
 using namespace Eigen;
 
-GuiTextEditPopup::GuiTextEditPopup(Window* window, const std::string& title, const std::string& initValue, 
+GuiTextEditPopup::GuiTextEditPopup(Window* window, const std::string& title, const std::string& initValue,
 	const std::function<void(const std::string&)>& okCallback, bool multiLine, const char* acceptBtnText)
 	: GuiComponent(window), mBackground(window, ":/frame.png"), mGrid(window, Vector2i(1, 3)), mMultiLine(multiLine)
 {
@@ -55,7 +55,7 @@ bool GuiTextEditPopup::input(InputConfig* config, Input input)
 		return true;
 
 	// pressing back when not text editing closes us
-	if(config->isMappedTo("b", input) && input.value)
+	if(config->isMappedTo(INPUT_4B_DOWN, input) && input.value)
 	{
 		delete this;
 		return true;

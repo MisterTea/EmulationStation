@@ -26,7 +26,7 @@ GuiGamelistOptions::GuiGamelistOptions(Window* window, SystemData* system) : Gui
 	row.addElement(std::make_shared<TextComponent>(mWindow, "JUMP TO LETTER", Font::get(FONT_SIZE_MEDIUM), 0x777777FF), true);
 	row.addElement(mJumpToLetterList, false);
 	row.input_handler = [&](InputConfig* config, Input input) {
-		if(config->isMappedTo("a", input) && input.value)
+		if(config->isMappedTo(INPUT_4B_LEFT, input) && input.value)
 		{
 			jumpToLetter();
 			return true;
@@ -139,7 +139,7 @@ void GuiGamelistOptions::jumpToLetter()
 
 bool GuiGamelistOptions::input(InputConfig* config, Input input)
 {
-	if((config->isMappedTo("b", input) || config->isMappedTo("select", input)) && input.value)
+	if((config->isMappedTo(INPUT_4B_DOWN, input) || config->isMappedTo(INPUT_SELECT, input)) && input.value)
 	{
 		save();
 		delete this;
@@ -152,7 +152,7 @@ bool GuiGamelistOptions::input(InputConfig* config, Input input)
 std::vector<HelpPrompt> GuiGamelistOptions::getHelpPrompts()
 {
 	auto prompts = mMenu.getHelpPrompts();
-	prompts.push_back(HelpPrompt("b", "close"));
+	prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_DOWN), "close"));
 	return prompts;
 }
 

@@ -5,7 +5,7 @@
 
 using namespace GridFlags;
 
-ComponentGrid::ComponentGrid(Window* window, const Eigen::Vector2i& gridDimensions) : GuiComponent(window), 
+ComponentGrid::ComponentGrid(Window* window, const Eigen::Vector2i& gridDimensions) : GuiComponent(window),
 	mGridSize(gridDimensions), mCursor(0, 0)
 {
 	assert(gridDimensions.x() > 0 && gridDimensions.y() > 0);
@@ -40,7 +40,7 @@ float ComponentGrid::getColWidth(int col)
 		if(mColWidths[x] == 0)
 			between++;
 	}
-	
+
 	return (freeWidthPerc * mSize.x()) / between;
 }
 
@@ -58,7 +58,7 @@ float ComponentGrid::getRowHeight(int row)
 		if(mRowHeights[y] == 0)
 			between++;
 	}
-	
+
 	return (freeHeightPerc * mSize.y()) / between;
 }
 
@@ -143,7 +143,7 @@ void ComponentGrid::updateCellComponent(const GridEntry& cell)
 	// center component
 	pos[0] = pos.x() + (size.x() - cell.component->getSize().x()) / 2;
 	pos[1] = pos.y() + (size.y() - cell.component->getSize().y()) / 2;
-	
+
 	cell.component->setPosition(pos);
 }
 
@@ -209,7 +209,7 @@ void ComponentGrid::onSizeChanged()
 ComponentGrid::GridEntry* ComponentGrid::getCellAt(int x, int y)
 {
 	assert(x >= 0 && x < mGridSize.x() && y >= 0 && y < mGridSize.y());
-	
+
 	for(auto it = mCells.begin(); it != mCells.end(); it++)
 	{
 		int xmin = it->pos.x();
@@ -233,19 +233,19 @@ bool ComponentGrid::input(InputConfig* config, Input input)
 	if(!input.value)
 		return false;
 
-	if(config->isMappedTo("down", input))
+	if(config->isMappedTo(INPUT_DOWN, input))
 	{
 		return moveCursor(Eigen::Vector2i(0, 1));
 	}
-	if(config->isMappedTo("up", input))
+	if(config->isMappedTo(INPUT_UP, input))
 	{
 		return moveCursor(Eigen::Vector2i(0, -1));
 	}
-	if(config->isMappedTo("left", input))
+	if(config->isMappedTo(INPUT_LEFT, input))
 	{
 		return moveCursor(Eigen::Vector2i(-1, 0));
 	}
-	if(config->isMappedTo("right", input))
+	if(config->isMappedTo(INPUT_RIGHT, input))
 	{
 		return moveCursor(Eigen::Vector2i(1, 0));
 	}
@@ -279,7 +279,7 @@ bool ComponentGrid::moveCursor(Eigen::Vector2i dir)
 	GridEntry* currentCursorEntry = getCellAt(mCursor);
 
 	Eigen::Vector2i searchAxis(dir.x() == 0, dir.y() == 0);
-	
+
 	while(mCursor.x() >= 0 && mCursor.y() >= 0 && mCursor.x() < mGridSize.x() && mCursor.y() < mGridSize.y())
 	{
 		mCursor = mCursor + dir;
@@ -360,7 +360,7 @@ void ComponentGrid::render(const Eigen::Affine3f& parentTrans)
 	Eigen::Affine3f trans = parentTrans * getTransform();
 
 	renderChildren(trans);
-	
+
 	// draw cell separators
 	if(mLines.size())
 	{
@@ -425,20 +425,20 @@ std::vector<HelpPrompt> ComponentGrid::getHelpPrompts()
 	GridEntry* e = getCellAt(mCursor);
 	if(e)
 		prompts = e->component->getHelpPrompts();
-	
+
 	bool canScrollVert = mGridSize.y() > 1;
 	bool canScrollHoriz = mGridSize.x() > 1;
 	for(auto it = prompts.begin(); it != prompts.end(); it++)
 	{
-        if(strcmp(it->first, "up/down/left/right") == 0)
+        if(it->first == "up/down/left/right")
 		{
 			canScrollHoriz = false;
 			canScrollVert = false;
 			break;
-        }else if(strcmp(it->first, "up/down") == 0)
+        }else if(it->first == "up/down")
 		{
 			canScrollVert = false;
-        }else if(strcmp(it->first, "left/right") == 0)
+        }else if(it->first == "left/right")
 		{
 			canScrollHoriz = false;
 		}

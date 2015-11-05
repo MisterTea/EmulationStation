@@ -13,7 +13,7 @@
 
 using namespace boost::locale;
 
-Window::Window() : mNormalizeNextUpdate(false), mFrameTimeElapsed(0), mFrameCountElapsed(0), mAverageDeltaTime(10), 
+Window::Window() : mNormalizeNextUpdate(false), mFrameTimeElapsed(0), mFrameCountElapsed(0), mAverageDeltaTime(10),
 	mAllowSleep(true), mSleeping(false), mTimeSinceLastInput(0)
 {
 	mHelp = new HelpComponent(this);
@@ -28,7 +28,7 @@ Window::~Window()
 	// delete all our GUIs
 	while(peekGui())
 		delete peekGui();
-	
+
 	delete mHelp;
 }
 
@@ -136,11 +136,11 @@ void Window::input(InputConfig* config, Input input)
 	}
 	else
 	{
-            if(config->isMappedTo("x", input) && input.value && !launchKodi && Settings::getInstance()->getBool("kodi.enabled") && Settings::getInstance()->getBool("kodi.xbutton")){
+            if(config->isMappedTo(INPUT_4B_RIGHT, input) && input.value && !launchKodi && Settings::getInstance()->getBool("kodi.enabled") && Settings::getInstance()->getBool("kodi.xbutton")){
                 launchKodi = true;
                 Window * window = this;
-                this->pushGui(new GuiMsgBox(this, "DO YOU WANT TO START KODI MEDIA CENTER ?", "YES", 
-				[window, this] { 
+                this->pushGui(new GuiMsgBox(this, "DO YOU WANT TO START KODI MEDIA CENTER ?", "YES",
+				[window, this] {
                                     if( ! RecalboxSystem::getInstance()->launchKodi(window)) {
                                         LOG(LogWarning) << "Shutdown terminated with non-zero result!";
                                     }
@@ -157,7 +157,7 @@ void Window::input(InputConfig* config, Input input)
 
 void Window::update(int deltaTime)
 {
-    
+
         if(!mMessages.empty()){
 		std::string message = mMessages.back();
 		mMessages.pop_back();
@@ -175,11 +175,11 @@ void Window::update(int deltaTime)
 	if(mFrameTimeElapsed > 500)
 	{
 		mAverageDeltaTime = mFrameTimeElapsed / mFrameCountElapsed;
-		
+
 		if(Settings::getInstance()->getBool("DrawFramerate"))
 		{
 			std::stringstream ss;
-			
+
 			// fps
 			ss << std::fixed << std::setprecision(1) << (1000.0f * (float)mFrameCountElapsed / (float)mFrameTimeElapsed) << "fps, ";
 			ss << std::fixed << std::setprecision(2) << ((float)mFrameTimeElapsed / (float)mFrameCountElapsed) << "ms";
@@ -297,7 +297,7 @@ void Window::setHelpPrompts(const std::vector<HelpPrompt>& prompts, const HelpSt
 	for(auto it = prompts.begin(); it != prompts.end(); it++)
 	{
 		// only add it if the same icon hasn't already been added
-		if(inputSeenMap.insert(std::make_pair<std::string, bool>(it->first, true)).second)
+		if(inputSeenMap.insert(std::make_pair<std::string, bool>(std::string(it->first), true)).second)
 		{
 			// this symbol hasn't been seen yet, what about the action name?
 			auto mappedTo = mappedToSeenMap.find(it->second);
@@ -306,8 +306,8 @@ void Window::setHelpPrompts(const std::vector<HelpPrompt>& prompts, const HelpSt
 				// yes, it has!
 
 				// can we combine? (dpad only)
-                if((strcmp(it->first, "up/down") == 0 && strcmp(addPrompts.at(mappedTo->second).first, "left/right") == 0) ||
-                    (strcmp(it->first, "left/right") == 0 && strcmp(addPrompts.at(mappedTo->second).first, "up/down") == 0))
+        if((it->first == "up/down" && addPrompts.at(mappedTo->second).first == "left/right") ||
+           (it->first == "left/right" && addPrompts.at(mappedTo->second).first == "up/down"))
 				{
 					// yes!
 					addPrompts.at(mappedTo->second).first = "up/down/left/right";
@@ -326,16 +326,16 @@ void Window::setHelpPrompts(const std::vector<HelpPrompt>& prompts, const HelpSt
 
 	// sort prompts so it goes [dpad_all] [dpad_u/d] [dpad_l/r] [a/b/x/y/l/r] [start/select]
 	std::sort(addPrompts.begin(), addPrompts.end(), [](const HelpPrompt& a, const HelpPrompt& b) -> bool {
-		
+
 		static const char* map[] = {
 			"up/down/left/right",
 			"up/down",
 			"left/right",
-			"a", "b", "x", "y", "l", "r", 
-			"start", "select", 
+			"4bl", "4bd", "4br", "4bu", "l1", "r1",
+			"start", "select",
 			NULL
 		};
-		
+
 		int i = 0;
 		int aVal = 0;
 		int bVal = 0;

@@ -17,7 +17,7 @@
 //    It can change even if the device is the same, and is only used to open joysticks (required to receive SDL events).
 // 2. SDL_JoystickID - this is an ID for each joystick that is supposed to remain consistent between plugging and unplugging.
 //    ES doesn't care if it does, though.
-// 3. "Device ID" - this is something I made up and is what InputConfig's getDeviceID() returns.  
+// 3. "Device ID" - this is something I made up and is what InputConfig's getDeviceID() returns.
 //    This is actually just an SDL_JoystickID (also called instance ID), but -1 means "keyboard" instead of "error."
 // 4. Joystick GUID - this is some squashed version of joystick vendor, version, and a bunch of other device-specific things.
 //    It should remain the same across runs of the program/system restarts/device reordering and is what I use to identify which joystick to load.
@@ -48,7 +48,7 @@ void InputManager::init()
 	if(initialized())
 		deinit();
 
-	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, 
+	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS,
 		Settings::getInstance()->getBool("BackgroundJoystickInput") ? "1" : "0");
 	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
 	SDL_JoystickEventState(SDL_ENABLE);
@@ -63,7 +63,7 @@ void InputManager::init()
 void InputManager::addJoystickByDeviceIndex(int id)
 {
 	assert(id >= 0 && id < SDL_NumJoysticks());
-	
+
 	// open joystick & add to our list
 	SDL_Joystick* joy = SDL_JoystickOpen(id);
 	assert(joy);
@@ -154,13 +154,13 @@ void InputManager::deinit()
 
 	this->clearJoystick();
 
-        
+
 	if(mKeyboardInputConfig != NULL)
 	{
 		delete mKeyboardInputConfig;
 		mKeyboardInputConfig = NULL;
 	}
-        
+
 	SDL_JoystickEventState(SDL_DISABLE);
 	SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 }
@@ -279,7 +279,7 @@ bool InputManager::loadInputConfig(InputConfig* config)
 	std::string path = getConfigPath();
 	if(!fs::exists(path))
 		return false;
-	
+
 	pugi::xml_document doc;
 	pugi::xml_parse_result res = doc.load_file(path.c_str());
 
@@ -310,18 +310,18 @@ void InputManager::loadDefaultKBConfig()
 	InputConfig* cfg = getInputConfigByDevice(DEVICE_KEYBOARD);
 
 	cfg->clear();
-	cfg->mapInput("up", Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_UP, 1, true));
-	cfg->mapInput("down", Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_DOWN, 1, true));
-	cfg->mapInput("left", Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_LEFT, 1, true));
-	cfg->mapInput("right", Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_RIGHT, 1, true));
+	cfg->mapInput(INPUT_UP, Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_UP, 1, true));
+	cfg->mapInput(INPUT_DOWN, Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_DOWN, 1, true));
+	cfg->mapInput(INPUT_LEFT, Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_LEFT, 1, true));
+	cfg->mapInput(INPUT_RIGHT, Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_RIGHT, 1, true));
 
-	cfg->mapInput("a", Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_RETURN, 1, true));
-	cfg->mapInput("b", Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_ESCAPE, 1, true));
-	cfg->mapInput("start", Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_F1, 1, true));
-	cfg->mapInput("select", Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_F2, 1, true));
+	cfg->mapInput(INPUT_4B_LEFT, Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_RETURN, 1, true));
+	cfg->mapInput(INPUT_4B_DOWN, Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_ESCAPE, 1, true));
+	cfg->mapInput(INPUT_START, Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_F1, 1, true));
+	cfg->mapInput(INPUT_SELECT, Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_F2, 1, true));
 
-	cfg->mapInput("pageup", Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_RIGHTBRACKET, 1, true));
-	cfg->mapInput("pagedown", Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_LEFTBRACKET, 1, true));
+	cfg->mapInput(INPUT_L1, Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_RIGHTBRACKET, 1, true));
+	cfg->mapInput(INPUT_R1, Input(DEVICE_KEYBOARD, TYPE_KEY, SDLK_LEFTBRACKET, 1, true));
 }
 
 void InputManager::writeDeviceConfig(InputConfig* config)
@@ -409,10 +409,10 @@ std::string InputManager::getDeviceGUIDString(int deviceId)
 std::string InputManager::configureEmulators() {
     std::stringstream command;
     // 1 recuperer les configurated
-    
-    
+
+
     std::list<InputConfig *> availableConfigured;
-    
+
 
     for (auto it = 0; it < InputManager::getInstance()->getNumJoysticks(); it++) {
         InputConfig * config = InputManager::getInstance()->getInputConfigByDevice(it);
@@ -424,7 +424,7 @@ std::string InputManager::configureEmulators() {
     }
     //2 pour chaque joueur verifier si il y a un configurated
         // associer le input au joueur
-        // enlever des disponibles 
+        // enlever des disponibles
     std::map<int, InputConfig*> playerJoysticks;
 
     for (int player = 0; player < 4; player++) {
@@ -450,7 +450,7 @@ std::string InputManager::configureEmulators() {
             }
         }
     }
-    
+
     for (int player = 0; player < 4; player++) {
         InputConfig * playerInputConfig = playerJoysticks[player];
         // si aucune config a été trouvé pour le joueur, on essaie de lui filer un libre
@@ -471,7 +471,7 @@ std::string InputManager::configureEmulators() {
         }/*else {
             command << " " << "DEFAULT" << " -1 DEFAULTDONOTFINDMEINCOMMAND";
         }*/
-        
+
     }
         //LOG(LogInfo) << "I have for "<< "INPUT P" << player << " a configname : " << playerConfigName;
     //command << " \"" << systemName << "\"" ;

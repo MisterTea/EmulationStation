@@ -1,16 +1,16 @@
 #include "components/AsyncReqComponent.h"
 #include "Renderer.h"
 
-AsyncReqComponent::AsyncReqComponent(Window* window, std::shared_ptr<HttpReq> req, std::function<void(std::shared_ptr<HttpReq>)> onSuccess, std::function<void()> onCancel) 
-	: GuiComponent(window), 
+AsyncReqComponent::AsyncReqComponent(Window* window, std::shared_ptr<HttpReq> req, std::function<void(std::shared_ptr<HttpReq>)> onSuccess, std::function<void()> onCancel)
+	: GuiComponent(window),
 	mSuccessFunc(onSuccess), mCancelFunc(onCancel), mTime(0), mRequest(req)
 {
-	
+
 }
 
 bool AsyncReqComponent::input(InputConfig* config, Input input)
 {
-	if(input.value != 0 && config->isMappedTo("b", input))
+	if(input.value != 0 && config->isMappedTo(INPUT_4B_DOWN, input))
 	{
 		if(mCancelFunc)
 			mCancelFunc();

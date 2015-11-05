@@ -61,23 +61,23 @@ void SystemView::populate()
 			ImageComponent* logoSelected = new ImageComponent(mWindow);
 			logoSelected->setMaxSize(Eigen::Vector2f(logoSize().x() * SELECTED_SCALE, logoSize().y() * SELECTED_SCALE * 0.70f));
 			logoSelected->applyTheme((*it)->getTheme(), "system", "logo", ThemeFlags::PATH);
-			logoSelected->setPosition((logoSize().x() - logoSelected->getSize().x()) / 2, 
+			logoSelected->setPosition((logoSize().x() - logoSelected->getSize().x()) / 2,
 				(logoSize().y() - logoSelected->getSize().y()) / 2); // center
 			e.data.logoSelected = std::shared_ptr<GuiComponent>(logoSelected);
 		}else{
 			// no logo in theme; use text
-			TextComponent* text = new TextComponent(mWindow, 
-				(*it)->getName(), 
-				Font::get(FONT_SIZE_LARGE), 
-				0x000000FF, 
+			TextComponent* text = new TextComponent(mWindow,
+				(*it)->getName(),
+				Font::get(FONT_SIZE_LARGE),
+				0x000000FF,
 				ALIGN_CENTER);
 			text->setSize(logoSize());
 			e.data.logo = std::shared_ptr<GuiComponent>(text);
 
-			TextComponent* textSelected = new TextComponent(mWindow, 
-				(*it)->getName(), 
-				Font::get((int)(FONT_SIZE_LARGE * SELECTED_SCALE)), 
-				0x000000FF, 
+			TextComponent* textSelected = new TextComponent(mWindow,
+				(*it)->getName(),
+				Font::get((int)(FONT_SIZE_LARGE * SELECTED_SCALE)),
+				0x000000FF,
 				ALIGN_CENTER);
 			textSelected->setSize(logoSize());
 			e.data.logoSelected = std::shared_ptr<GuiComponent>(textSelected);
@@ -94,7 +94,7 @@ void SystemView::populate()
 void SystemView::goToSystem(SystemData* system, bool animate)
 {
 
-        
+
 	setCursor(system);
 
 	if(!animate)
@@ -117,23 +117,23 @@ bool SystemView::input(InputConfig* config, Input input)
 			updateHelpPrompts();
 			return true;
 		}
-		if(config->isMappedTo("left", input))
+		if(config->isMappedTo(INPUT_LEFT, input))
 		{
 			listInput(-1);
 			return true;
 		}
-		if(config->isMappedTo("right", input))
+		if(config->isMappedTo(INPUT_RIGHT, input))
 		{
 			listInput(1);
 			return true;
 		}
-		if(config->isMappedTo("a", input))
+		if(config->isMappedTo(INPUT_4B_LEFT, input))
 		{
 			stopScrolling();
 			ViewController::get()->goToGameList(getSelected());
 			return true;
 		}
-		if(config->isMappedTo("select", input))
+		if(config->isMappedTo(INPUT_SELECT, input))
 		{
 			auto s = new GuiSettings(mWindow, "QUIT");
 
@@ -168,7 +168,7 @@ bool SystemView::input(InputConfig* config, Input input)
 		}
 
 	}else{
-		if(config->isMappedTo("left", input) || config->isMappedTo("right", input))
+		if(config->isMappedTo(INPUT_LEFT, input) || config->isMappedTo(INPUT_RIGHT, input))
 			listInput(0);
 	}
 
@@ -183,7 +183,7 @@ void SystemView::update(int deltaTime)
 
 void SystemView::onCursorChanged(const CursorState& state)
 {
-    
+
         if(lastSystem != getSelected()){
                 lastSystem = getSelected();
                 AudioManager::getInstance()->startMusic(getSelected()->getTheme());
@@ -201,13 +201,13 @@ void SystemView::onCursorChanged(const CursorState& state)
 
 	float endPos = target; // directly
     float dist = std::abs(endPos - startPos);
-	
+
     if(std::abs(target + posMax - startPos) < dist)
 		endPos = target + posMax; // loop around the end (0 -> max)
     if(std::abs(target - posMax - startPos) < dist)
 		endPos = target - posMax; // loop around the start (max - 1 -> -1)
 
-	
+
 	// animate mSystemInfo's opacity (fade out, wait, fade back in)
 
 	cancelAnimation(1);
@@ -311,7 +311,7 @@ void SystemView::render(const Eigen::Affine3f& parentTrans)
 		return;
 
 	Eigen::Affine3f trans = getTransform() * parentTrans;
-	
+
 	// draw the list elements (titles, backgrounds, logos)
 	const float logoSizeX = logoSize().x() + LOGO_PADDING;
 
@@ -389,7 +389,7 @@ std::vector<HelpPrompt> SystemView::getHelpPrompts()
 {
 	std::vector<HelpPrompt> prompts;
 	prompts.push_back(HelpPrompt("left/right", "choose"));
-	prompts.push_back(HelpPrompt("a", "select"));
+	prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_LEFT), "select"));
 	return prompts;
 }
 

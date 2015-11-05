@@ -103,14 +103,14 @@ bool FileSystemSelectorComponent::input(InputConfig* config, Input input)
 	const fs::path path = selectedFilePath();
 	const fe::Type type = filePathType(path);
 
-	if (config->isMappedTo("a", input) && input.value) { // cd in
+	if (config->isMappedTo(INPUT_4B_LEFT, input) && input.value) { // cd in
 		if (!path.empty()) {
 			setCurrentPath(path);
 		}
 
 		return true;
 	}
-	else if (config->isMappedTo("b", input) && input.value) { // cd up
+	else if (config->isMappedTo(INPUT_4B_DOWN, input) && input.value) { // cd up
 		switch (m_mode) {
 			case fssc::FilesShowFolders:
 			case fssc::FoldersShowFiles:
@@ -124,7 +124,7 @@ bool FileSystemSelectorComponent::input(InputConfig* config, Input input)
 
 		return true;
 	}
-	else if (config->isMappedTo("x", input) && input.value) { // select
+	else if (config->isMappedTo(INPUT_4B_RIGHT, input) && input.value) { // select
 		if (m_acceptCallback) {
 			switch (m_mode) {
 				case fssc::FilesHideFolders:
@@ -151,7 +151,7 @@ bool FileSystemSelectorComponent::input(InputConfig* config, Input input)
 
 		return true;
 	}
-	else if (config->isMappedTo("y", input) && input.value) { // exit
+	else if (config->isMappedTo(INPUT_4B_UP, input) && input.value) { // exit
 		delete this;
 		return true;
 	}
@@ -167,20 +167,20 @@ std::vector<HelpPrompt> FileSystemSelectorComponent::getHelpPrompts()
 
 	if (m_mode != fssc::FilesHideFolders) {
 		if (type & fssc::FolderInternal) {
-			prompts.push_back(HelpPrompt("a", "cd in"));
+			prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_LEFT), "cd in"));
 		}
 
 		if (m_currentPath != m_currentPath.root_path()) {
-			prompts.push_back(HelpPrompt("b", "cd up"));
+			prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_DOWN), "cd up"));
 		}
 	}
 
-	prompts.push_back(HelpPrompt("y", "cancel"));
+	prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_UP), "cancel"));
 
 	switch (m_mode) {
 		case fssc::FilesShowFolders: {
 			if (type & fssc::FileInternal) {
-				prompts.push_back(HelpPrompt("x", "select"));
+				prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_RIGHT), "select"));
 			}
 
 			break;
@@ -188,7 +188,7 @@ std::vector<HelpPrompt> FileSystemSelectorComponent::getHelpPrompts()
 
 		case fssc::FoldersShowFiles: {
 			if (type & fssc::FolderInternal) {
-				prompts.push_back(HelpPrompt("x", "select"));
+				prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_RIGHT), "select"));
 			}
 
 			break;
@@ -196,7 +196,7 @@ std::vector<HelpPrompt> FileSystemSelectorComponent::getHelpPrompts()
 
 		case fssc::FoldersHideFiles: {
 			if (type & fssc::FolderInternal) {
-				prompts.push_back(HelpPrompt("x", "select"));
+				prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_RIGHT), "select"));
 			}
 
 			break;
@@ -204,7 +204,7 @@ std::vector<HelpPrompt> FileSystemSelectorComponent::getHelpPrompts()
 
 		case fssc::FilesHideFolders: {
 			if (type & fssc::FileInternal) {
-				prompts.push_back(HelpPrompt("x", "select"));
+				prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_RIGHT), "select"));
 			}
 
 			break;
@@ -250,7 +250,7 @@ bool FileSystemSelectorComponent::setCurrentPath(const fs::path& currentPath)
 		const fe* entry = (*ientry);
 		ComponentListRow row(entry->filePath.string());
 		unsigned int color = DEFAULT_DISABLED_COLOR;
-		
+
 		// A folder
 		if (entry->type & fssc::FolderInternal) {
 			// We want a folder
@@ -265,7 +265,7 @@ bool FileSystemSelectorComponent::setCurrentPath(const fs::path& currentPath)
 				color = DEFAULT_COLOR;
 			}
 		}
-		
+
 		row.addElement(std::make_shared<TextComponent>(mWindow, entry->filePath.filename().string(), DEFAULT_FONT, color), true);
 		addRow(row, false, std::next(ientry) == entries.cend());
 	}

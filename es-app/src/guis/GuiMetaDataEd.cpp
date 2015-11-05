@@ -15,15 +15,15 @@
 
 using namespace Eigen;
 
-GuiMetaDataEd::GuiMetaDataEd(Window* window, const FileData& file, 
-	const std::function<void()>& saveCallback, const std::function<void()>& deleteFunc) 
-	: GuiComponent(window), 
+GuiMetaDataEd::GuiMetaDataEd(Window* window, const FileData& file,
+	const std::function<void()>& saveCallback, const std::function<void()>& deleteFunc)
+	: GuiComponent(window),
 	mFile(file),
 	mMetaData(mFile.get_metadata()),
 	mMetaDataDecl(mMetaData.getMDD()),
 	mScraperParams(mFile.getSystem(), mFile),
-	
-	mBackground(window, ":/frame.png"), 
+
+	mBackground(window, ":/frame.png"),
 	mGrid(window, Vector2i(1, 3)),
 
 	mSavedCallback(saveCallback), mDeleteFunc(deleteFunc)
@@ -32,9 +32,9 @@ GuiMetaDataEd::GuiMetaDataEd(Window* window, const FileData& file,
 	addChild(&mGrid);
 
 	mHeaderGrid = std::make_shared<ComponentGrid>(mWindow, Vector2i(1, 5));
-	
+
 	mTitle = std::make_shared<TextComponent>(mWindow, "EDIT METADATA", Font::get(FONT_SIZE_LARGE), 0x555555FF, ALIGN_CENTER);
-	mSubtitle = std::make_shared<TextComponent>(mWindow, strToUpper(mScraperParams.game.getPath().filename().generic_string()), 
+	mSubtitle = std::make_shared<TextComponent>(mWindow, strToUpper(mScraperParams.game.getPath().filename().generic_string()),
 		Font::get(FONT_SIZE_SMALL), 0x777777FF, ALIGN_CENTER);
 	mHeaderGrid->setEntry(mTitle, Vector2i(0, 1), false, true);
 	mHeaderGrid->setEntry(mSubtitle, Vector2i(0, 3), false, true);
@@ -103,7 +103,7 @@ GuiMetaDataEd::GuiMetaDataEd(Window* window, const FileData& file,
 				// MD_STRING
 				ed = std::make_shared<TextComponent>(window, "", Font::get(FONT_SIZE_SMALL, FONT_PATH_LIGHT), 0x777777FF, ALIGN_RIGHT);
 				row.addElement(ed, true);
-				
+
 				auto spacer = std::make_shared<GuiComponent>(mWindow);
 				spacer->setSize(Renderer::getScreenWidth() * 0.005f, 0);
 				row.addElement(spacer, false);
@@ -233,7 +233,7 @@ void GuiMetaDataEd::close(bool closeAllWindows)
 	if(dirty)
 	{
 		// changes were made, ask if the user wants to save them
-		mWindow->pushGui(new GuiMsgBox(mWindow, 
+		mWindow->pushGui(new GuiMsgBox(mWindow,
 			"SAVE CHANGES?",
 			"YES", [this, closeFunc] { save(); closeFunc(); },
 			"NO", closeFunc
@@ -248,8 +248,8 @@ bool GuiMetaDataEd::input(InputConfig* config, Input input)
 	if(GuiComponent::input(config, input))
 		return true;
 
-	const bool isStart = config->isMappedTo("start", input);
-	if(input.value != 0 && (config->isMappedTo("b", input) || isStart))
+	const bool isStart = config->isMappedTo(INPUT_START, input);
+	if(input.value != 0 && (config->isMappedTo(INPUT_4B_DOWN, input) || isStart))
 	{
 		close(isStart);
 		return true;

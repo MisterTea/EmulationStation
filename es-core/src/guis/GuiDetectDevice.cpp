@@ -14,7 +14,7 @@
 
 using namespace Eigen;
 
-GuiDetectDevice::GuiDetectDevice(Window* window, bool firstRun, const std::function<void()>& doneCallback) : GuiComponent(window), mFirstRun(firstRun), 
+GuiDetectDevice::GuiDetectDevice(Window* window, bool firstRun, const std::function<void()>& doneCallback) : GuiComponent(window), mFirstRun(firstRun),
 	mBackground(window, ":/frame.png"), mGrid(window, Vector2i(1, 5))
 {
 	mHoldingConfig = NULL;
@@ -23,16 +23,16 @@ GuiDetectDevice::GuiDetectDevice(Window* window, bool firstRun, const std::funct
 
 	addChild(&mBackground);
 	addChild(&mGrid);
-	
+
 	// title
-	mTitle = std::make_shared<TextComponent>(mWindow, firstRun ? "WELCOME" : "CONFIGURE INPUT", 
+	mTitle = std::make_shared<TextComponent>(mWindow, firstRun ? "WELCOME" : "CONFIGURE INPUT",
 		Font::get(FONT_SIZE_LARGE), 0x555555FF, ALIGN_CENTER);
 	mGrid.setEntry(mTitle, Vector2i(0, 0), false, true, Vector2i(1, 1), GridFlags::BORDER_BOTTOM);
 
 	// device info
 	std::stringstream deviceInfo;
 	int numDevices = InputManager::getInstance()->getNumJoysticks();
-	
+
 	if(numDevices > 0)
 		deviceInfo << numDevices << boost::locale::translate(" GAMEPAD") << (numDevices > 1 ? "S" : "") << boost::locale::translate(" DETECTED");
 	else
@@ -44,7 +44,7 @@ GuiDetectDevice::GuiDetectDevice(Window* window, bool firstRun, const std::funct
 	mMsg1 = std::make_shared<TextComponent>(mWindow, boost::locale::gettext("HOLD A BUTTON ON YOUR DEVICE TO CONFIGURE IT."), Font::get(FONT_SIZE_SMALL), 0x777777FF, ALIGN_CENTER);
 	mGrid.setEntry(mMsg1, Vector2i(0, 2), false, true);
 
-	const char* msg2str = firstRun ? boost::locale::gettext("PRESS F4 TO QUIT AT ANY TIME.").c_str() : boost::locale::gettext("PRESS ESC TO CANCEL.").c_str();
+	const std::string &msg2str = firstRun ? boost::locale::gettext("PRESS F4 TO QUIT AT ANY TIME.").c_str() : boost::locale::gettext("PRESS ESC TO CANCEL.").c_str();
 	mMsg2 = std::make_shared<TextComponent>(mWindow, msg2str, Font::get(FONT_SIZE_SMALL), 0x777777FF, ALIGN_CENTER);
 	mGrid.setEntry(mMsg2, Vector2i(0, 3), false, true);
 

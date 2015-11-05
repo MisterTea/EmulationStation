@@ -17,7 +17,7 @@ void SwitchComponent::onSizeChanged()
 
 bool SwitchComponent::input(InputConfig* config, Input input)
 {
-	if(config->isMappedTo("a", input) && input.value)
+	if(config->isMappedTo(INPUT_4B_LEFT, input) && input.value)
 	{
 		mState = !mState;
 		onStateChanged();
@@ -30,7 +30,7 @@ bool SwitchComponent::input(InputConfig* config, Input input)
 void SwitchComponent::render(const Eigen::Affine3f& parentTrans)
 {
 	Eigen::Affine3f trans = parentTrans * getTransform();
-	
+
 	mImage.render(trans);
 
 	renderChildren(trans);
@@ -55,6 +55,6 @@ void SwitchComponent::onStateChanged()
 std::vector<HelpPrompt> SwitchComponent::getHelpPrompts()
 {
 	std::vector<HelpPrompt> prompts;
-	prompts.push_back(HelpPrompt("a", "change"));
+	prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_LEFT), "change"));
 	return prompts;
 }

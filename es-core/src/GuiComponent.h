@@ -11,7 +11,7 @@ class AnimationController;
 class ThemeData;
 class Font;
 
-typedef std::pair<const char*, const char*> HelpPrompt;
+typedef std::pair<std::string, const char*> HelpPrompt;
 
 class GuiComponent
 {
@@ -45,7 +45,7 @@ public:
     void setSize(const Eigen::Vector2f& size);
     void setSize(float w, float h);
     virtual void onSizeChanged() {};
-	
+
 	void setParent(GuiComponent* parent);
 	GuiComponent* getParent() const;
 
@@ -87,7 +87,7 @@ public:
 
 	// Called whenever help prompts change.
 	void updateHelpPrompts();
-	
+
 	virtual HelpStyle getHelpStyle();
 
 	virtual inline void setScrollDir(int dir) {}

@@ -104,10 +104,10 @@ void RatingComponent::render(const Eigen::Affine3f& parentTrans)
 
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	
+
 	glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &mVertices[0].pos);
 	glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), &mVertices[0].tex);
-	
+
 	mFilledTexture->bind();
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -116,7 +116,7 @@ void RatingComponent::render(const Eigen::Affine3f& parentTrans)
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-	
+
 	glDisable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 
@@ -127,7 +127,7 @@ void RatingComponent::render(const Eigen::Affine3f& parentTrans)
 
 bool RatingComponent::input(InputConfig* config, Input input)
 {
-	if(config->isMappedTo("a", input) && input.value != 0)
+	if(config->isMappedTo(INPUT_4B_LEFT, input) && input.value != 0)
 	{
 		mValue += 1.f / NUM_RATING_STARS;
 		if(mValue > 1.0f)
@@ -168,6 +168,6 @@ void RatingComponent::applyTheme(const std::shared_ptr<ThemeData>& theme, const 
 std::vector<HelpPrompt> RatingComponent::getHelpPrompts()
 {
 	std::vector<HelpPrompt> prompts;
-	prompts.push_back(HelpPrompt("a", "add star"));
+	prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_LEFT), "add star"));
 	return prompts;
 }

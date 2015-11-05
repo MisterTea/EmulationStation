@@ -124,7 +124,7 @@ private:
 
 		bool input(InputConfig* config, Input input) override
 		{
-			if(config->isMappedTo("b", input) && input.value != 0)
+			if(config->isMappedTo(INPUT_4B_DOWN, input) && input.value != 0)
 			{
 				delete this;
 				return true;
@@ -142,7 +142,7 @@ private:
 	};
 
 public:
-	OptionListComponent(Window* window, const std::string& name, bool multiSelect = false) : GuiComponent(window), mMultiSelect(multiSelect), mName(name), 
+	OptionListComponent(Window* window, const std::string& name, bool multiSelect = false) : GuiComponent(window), mMultiSelect(multiSelect), mName(name),
 		 mText(window), mLeftArrow(window), mRightArrow(window)
 	{
 		auto font = Font::get(FONT_SIZE_MEDIUM, FONT_PATH_LIGHT);
@@ -189,14 +189,14 @@ public:
 	{
 		if(input.value != 0)
 		{
-			if(config->isMappedTo("a", input))
+			if(config->isMappedTo(INPUT_4B_LEFT, input))
 			{
 				open();
 				return true;
 			}
 			if(!mMultiSelect)
 			{
-				if(config->isMappedTo("left", input))
+				if(config->isMappedTo(INPUT_LEFT, input))
 				{
 					// move selection to previous
 					unsigned int i = getSelectedId();
@@ -209,7 +209,7 @@ public:
 					onSelectedChanged();
 					return true;
 
-				}else if(config->isMappedTo("right", input))
+				}else if(config->isMappedTo(INPUT_RIGHT, input))
 				{
 					// move selection to next
 					unsigned int i = getSelectedId();
@@ -237,7 +237,7 @@ public:
 		return ret;
 	}
 
-        
+
 	T getSelected()
 	{
 		assert(mMultiSelect == false);
@@ -248,7 +248,7 @@ public:
                     return T();
                 }
 	}
-        
+
         std::string getSelectedName()
 	{
                 assert(mMultiSelect == false);
@@ -259,7 +259,7 @@ public:
 		}
                 return "";
 	}
-        
+
 
 	void add(const std::string& name, const T& obj, bool selected)
 	{
@@ -333,8 +333,8 @@ private:
 		std::vector<HelpPrompt> prompts;
 		if(!mMultiSelect)
 			prompts.push_back(HelpPrompt("left/right", "change"));
-		
-		prompts.push_back(HelpPrompt("a", "select"));
+
+		prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_LEFT), "select"));
 		return prompts;
 	}
 

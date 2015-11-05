@@ -769,7 +769,7 @@ bool GuiMenu::input(InputConfig* config, Input input)
 	if(GuiComponent::input(config, input))
 		return true;
 
-	if((config->isMappedTo("b", input) || config->isMappedTo("start", input)) && input.value != 0)
+	if((config->isMappedTo(INPUT_4B_DOWN, input) || config->isMappedTo(INPUT_START, input)) && input.value != 0)
 	{
 		delete this;
 		return true;
@@ -782,7 +782,7 @@ std::vector<HelpPrompt> GuiMenu::getHelpPrompts()
 {
 	std::vector<HelpPrompt> prompts;
 	prompts.push_back(HelpPrompt("up/down", "choose"));
-	prompts.push_back(HelpPrompt("a", "select"));
-	prompts.push_back(HelpPrompt("start", "close"));
+	prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_LEFT), "select"));
+	prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_START), "close"));
 	return prompts;
 }

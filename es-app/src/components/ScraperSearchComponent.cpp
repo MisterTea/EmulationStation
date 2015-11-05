@@ -336,7 +336,7 @@ void ScraperSearchComponent::updateInfoPane()
 
 bool ScraperSearchComponent::input(InputConfig* config, Input input)
 {
-	if(config->isMappedTo("a", input) && input.value != 0)
+	if(config->isMappedTo(INPUT_4B_LEFT, input) && input.value != 0)
 	{
 		if(mBlockAccept)
 			return true;
@@ -396,7 +396,7 @@ void ScraperSearchComponent::update(int deltaTime)
 		auto results = mSearchHandle->getResults();
 		auto statusString = mSearchHandle->getStatusString();
 
-		// we reset here because onSearchDone in auto mode can call mSkipCallback() which can call 
+		// we reset here because onSearchDone in auto mode can call mSkipCallback() which can call
 		// another search() which will set our mSearchHandle to something important
 		mSearchHandle.reset();
 
@@ -450,9 +450,9 @@ void ScraperSearchComponent::openInputScreen(ScraperSearchParams& params)
 	};
 
 	stop();
-	mWindow->pushGui(new GuiTextEditPopup(mWindow, "SEARCH FOR", 
+	mWindow->pushGui(new GuiTextEditPopup(mWindow, "SEARCH FOR",
 		// initial value is last search if there was one, otherwise the clean path name
-		params.nameOverride.empty() ? params.game.getCleanName() : params.nameOverride, 
+		params.nameOverride.empty() ? params.game.getCleanName() : params.nameOverride,
 		searchForFunc, false, "SEARCH"));
 }
 
@@ -460,8 +460,8 @@ std::vector<HelpPrompt> ScraperSearchComponent::getHelpPrompts()
 {
 	std::vector<HelpPrompt> prompts = mGrid.getHelpPrompts();
 	if(getSelectedIndex() != -1)
-		prompts.push_back(HelpPrompt("a", "accept result"));
-	
+		prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_LEFT), "accept result"));
+
 	return prompts;
 }
 

@@ -31,13 +31,13 @@ void GuiSettings::save()
 
 bool GuiSettings::input(InputConfig* config, Input input)
 {
-	if(config->isMappedTo("b", input) && input.value != 0)
+	if(config->isMappedTo(INPUT_4B_DOWN, input) && input.value != 0)
 	{
 		delete this;
 		return true;
 	}
 
-	if(config->isMappedTo("start", input) && input.value != 0)
+	if(config->isMappedTo(INPUT_START, input) && input.value != 0)
 	{
 		// close everything
 		Window* window = mWindow;
@@ -45,7 +45,7 @@ bool GuiSettings::input(InputConfig* config, Input input)
 			delete window->peekGui();
 		return true;
 	}
-	
+
 	return GuiComponent::input(config, input);
 }
 
@@ -53,8 +53,8 @@ std::vector<HelpPrompt> GuiSettings::getHelpPrompts()
 {
 	std::vector<HelpPrompt> prompts = mMenu.getHelpPrompts();
 
-	prompts.push_back(HelpPrompt("b", "back"));
-	prompts.push_back(HelpPrompt("start", "close"));
+	prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_DOWN), "back"));
+	prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_START), "close"));
 
 	return prompts;
 }

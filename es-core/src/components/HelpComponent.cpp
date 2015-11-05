@@ -20,12 +20,12 @@ static const std::map<std::string, const char*> ICON_PATH_MAP = boost::assign::m
 	("up/down", ":/help/dpad_updown.svg")
 	("left/right", ":/help/dpad_leftright.svg")
 	("up/down/left/right", ":/help/dpad_all.svg")
-	("a", ":/help/button_a.svg")
-	("b", ":/help/button_b.svg")
-	("x", ":/help/button_x.svg")
-	("y", ":/help/button_y.svg")
-	("l", ":/help/button_l.svg")
-	("r", ":/help/button_r.svg")
+	("4bl", ":/help/button_x.svg")
+	("4bd", ":/help/button_a.svg")
+	("4bt", ":/help/button_b.svg")
+	("4bu", ":/help/button_y.svg")
+	("l1", ":/help/button_l.svg")
+	("r1", ":/help/button_r.svg")
 	("start", ":/help/button_start.svg")
 	("select", ":/help/button_select.svg");
 
@@ -63,7 +63,7 @@ void HelpComponent::updateGrid()
 
 	mGrid = std::make_shared<ComponentGrid>(mWindow, Vector2i(mPrompts.size() * 4, 1));
 	// [icon] [spacer1] [text] [spacer2]
-	
+
 	std::vector< std::shared_ptr<ImageComponent> > icons;
 	std::vector< std::shared_ptr<TextComponent> > labels;
 
@@ -72,7 +72,7 @@ void HelpComponent::updateGrid()
 	for(auto it = mPrompts.begin(); it != mPrompts.end(); it++)
 	{
 		auto icon = std::make_shared<ImageComponent>(mWindow);
-		icon->setImage(getIconTexture(it->first));
+		icon->setImage(getIconTexture(it->first.c_str()));
 		icon->setColorShift(mStyle.iconColor);
 		icon->setResize(0, height);
 		icons.push_back(icon);
@@ -104,7 +104,7 @@ std::shared_ptr<TextureResource> HelpComponent::getIconTexture(const char* name)
 	auto it = mIconCache.find(name);
 	if(it != mIconCache.end())
 		return it->second;
-	
+
 	auto pathLookup = ICON_PATH_MAP.find(name);
 	if(pathLookup == ICON_PATH_MAP.end())
 	{
@@ -135,7 +135,7 @@ void HelpComponent::setOpacity(unsigned char opacity)
 void HelpComponent::render(const Eigen::Affine3f& parentTrans)
 {
 	Eigen::Affine3f trans = parentTrans * getTransform();
-	
+
 	if(mGrid)
 		mGrid->render(trans);
 }

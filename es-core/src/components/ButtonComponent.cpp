@@ -7,9 +7,9 @@
 
 ButtonComponent::ButtonComponent(Window* window, const std::string& text, const std::string& helpText, const std::function<void()>& func) : GuiComponent(window),
 	mBox(window, ":/button.png"),
-	mFont(Font::get(FONT_SIZE_MEDIUM)), 
-	mFocused(false), 
-	mEnabled(true), 
+	mFont(Font::get(FONT_SIZE_MEDIUM)),
+	mFocused(false),
+	mEnabled(true),
 	mTextColorFocused(0xFFFFFFFF), mTextColorUnfocused(0x777777FF)
 {
 	setPressedFunc(func);
@@ -29,7 +29,7 @@ void ButtonComponent::setPressedFunc(std::function<void()> f)
 
 bool ButtonComponent::input(InputConfig* config, Input input)
 {
-	if(config->isMappedTo("a", input) && input.value != 0)
+	if(config->isMappedTo(INPUT_4B_LEFT, input) && input.value != 0)
 	{
 		if(mPressedFunc && mEnabled)
 			mPressedFunc();
@@ -43,7 +43,7 @@ void ButtonComponent::setText(const std::string& text, const std::string& helpTe
 {
 	mText = strToUpper(boost::locale::gettext(text.c_str()));
 	mHelpText = boost::locale::gettext(helpText.c_str());
-	
+
 	mTextCache = std::unique_ptr<TextCache>(mFont->buildTextCache(mText, 0, 0, getCurTextColor()));
 
 	float minWidth = mFont->sizeText("DELETE").x() + 12;
@@ -88,7 +88,7 @@ void ButtonComponent::updateImage()
 void ButtonComponent::render(const Eigen::Affine3f& parentTrans)
 {
 	Eigen::Affine3f trans = roundMatrix(parentTrans * getTransform());
-	
+
 	mBox.render(trans);
 
 	if(mTextCache)
@@ -117,6 +117,6 @@ unsigned int ButtonComponent::getCurTextColor() const
 std::vector<HelpPrompt> ButtonComponent::getHelpPrompts()
 {
 	std::vector<HelpPrompt> prompts;
-	prompts.push_back(HelpPrompt("a", mHelpText.empty() ? mText.c_str() : mHelpText.c_str()));
+	prompts.push_back(HelpPrompt(inputCategoryToString(INPUT_4B_LEFT), mHelpText.empty() ? mText.c_str() : mHelpText.c_str()));
 	return prompts;
 }
