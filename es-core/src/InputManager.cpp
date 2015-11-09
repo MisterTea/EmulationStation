@@ -1,3 +1,6 @@
+#include <vector>
+#include <string>
+#include <algorithm>
 #include "InputManager.h"
 #include "InputConfig.h"
 #include "Settings.h"
@@ -58,6 +61,7 @@ void InputManager::init()
 
 	mKeyboardInputConfig = new InputConfig(DEVICE_KEYBOARD, -1, "Keyboard", KEYBOARD_GUID_STRING);
 	loadInputConfig(mKeyboardInputConfig);
+  createMameXML();
 }
 
 void InputManager::addJoystickByDeviceIndex(int id)
@@ -360,6 +364,77 @@ void InputManager::writeDeviceConfig(InputConfig* config)
 
 	config->writeToXML(root);
 	doc.save_file(path.c_str());
+}
+
+void InputManager::createMameXML() {
+  std::vector<std::string> guids;
+  for (auto &it : mInputConfigs) {
+    guids.push_back(it.second->getDeviceGUIDString() + std::to_string(it.second->getDeviceIndex()));
+    printf("GUID: %s\n",guids.back().c_str());
+  }
+  sort(guids.begin(), guids.end());
+  // TODO: Make a setting so keyboard is solely player 1.
+  printf("<?xml version=\"1.0\"?>\n<mameconfig version=\"10\">\n<system name=\"default\">\n<input>\n");
+  for (int player=0;player<std::max(1,int(guids.size()));player++) {
+    std::string playerControllerGuid = "";
+    if (player < guids.size()) {
+      playerControllerGuid = guids[player];
+    }
+    for (int a=0;a<INPUT_END;a++) {
+      InputCategory ic = (InputCategory)a;
+      std::vector<std::string> icNames = inputCategoryToMameStrings(ic, player);
+      for (std::string portName : icNames) {
+        bool startedPort=false;
+        std::vector<std::string> sequences = {"standard"};
+        bool analog = mamePortIsAnalog(portName);
+        if (analog) {
+          sequences = {"standard","increment","decrement"};
+        }
+        for (std::string sequence : sequences) {
+          InputCategory icForSequence = ic;
+          if (sequence != "standard") {
+            if (reverseInputCategory(ic) == INPUT_END) {
+              // Only reversible inputs can be increment/decrement
+              continue;
+            }
+          }
+          if (sequence == "decrement") {
+            icForSequence = reverseInputCategory(ic);
+          }
+          std::string totalInput = "";
+          if (player==0) {
+            totalInput = mKeyboardInputConfig->getMameNameForCategory(icForSequence, portName, sequence, 0);
+          }
+          for (auto &it : mInputConfigs) {
+            std::string inputGuid = it.second->getDeviceGUIDString() + std::to_string(it.second->getDeviceIndex());
+            if (inputGuid != playerControllerGuid) {
+              continue;
+            }
+            std::string input = it.second->getMameNameForCategory(icForSequence, portName, sequence, player);
+            if (input.length()) {
+              if (totalInput.length()) {
+                totalInput += std::string(" OR ");
+              }
+              totalInput += input;
+            }
+          }
+          if (totalInput.length()) {
+            if (!startedPort) {
+              printf("<port type=\"%s\">\n", portName.c_str());
+              startedPort=true;
+            }
+            printf("<newseq type=\"%s\">\n", sequence.c_str());
+            printf("%s\n",totalInput.c_str());
+            printf("</newseq>\n");
+          }
+        }
+        if (startedPort) {
+            printf("</port>\n");
+        }
+      }
+    }
+  }
+  printf("</input>\n</system>\n</mameconfig>\n");
 }
 
 std::string InputManager::getConfigPath()

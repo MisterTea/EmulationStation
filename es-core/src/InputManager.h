@@ -34,6 +34,7 @@ private:
 	bool loadInputConfig(InputConfig* config); // returns true if successfully loaded, false if not (or didn't exist)
         void clearJoystick();
         void addAllJoysticks();
+void createMameXML();
 
 
 public:

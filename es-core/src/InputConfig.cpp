@@ -6,6 +6,133 @@
 #include "Log.h"
 #include "InputManager.h"
 
+bool mamePortIsAnalog(const std::string &mamePort) {
+  return
+    mamePort == "P1_AD_STICK_X" ||
+    mamePort == "P1_AD_STICK_Y" ||
+    mamePort == "P1_AD_STICK_Z" ||
+    mamePort == "P1_PADDLE" ||
+    mamePort == "P2_AD_STICK_X" ||
+    mamePort == "P2_AD_STICK_Y" ||
+    mamePort == "P2_AD_STICK_Z" ||
+    mamePort == "P2_PADDLE";
+}
+
+InputCategory reverseInputCategory(InputCategory ic) {
+  switch (ic) {
+  case INPUT_UP:
+    return INPUT_DOWN;
+  case INPUT_DOWN:
+    return INPUT_UP;
+  case INPUT_LEFT:
+    return INPUT_RIGHT;
+  case INPUT_RIGHT:
+    return INPUT_LEFT;
+  case INPUT_JOYSTICK1_UP:
+    return INPUT_JOYSTICK1_DOWN;
+  case INPUT_JOYSTICK1_DOWN:
+    return INPUT_JOYSTICK1_UP;
+  case INPUT_JOYSTICK1_LEFT:
+    return INPUT_JOYSTICK1_RIGHT;
+  case INPUT_JOYSTICK1_RIGHT:
+    return INPUT_JOYSTICK1_LEFT;
+  case INPUT_JOYSTICK2_UP:
+    return INPUT_JOYSTICK2_DOWN;
+  case INPUT_JOYSTICK2_DOWN:
+    return INPUT_JOYSTICK2_UP;
+  case INPUT_JOYSTICK2_LEFT:
+    return INPUT_JOYSTICK2_RIGHT;
+  case INPUT_JOYSTICK2_RIGHT:
+    return INPUT_JOYSTICK2_LEFT;
+  default:
+    return INPUT_END;
+  }
+}
+
+std::string axisIndexToMameName(int index, bool positive, bool analog) {
+  if (analog) {
+    switch (index) {
+    case 0:
+      return "XAXIS";
+    case 1:
+      return "YAXIS";
+    case 2:
+      return "ZAXIS";
+    case 3:
+      return "RXAXIS";
+    case 4:
+      return "RYAXIS";
+    default:
+      return "OOPS";
+    }
+  } else {
+    switch (index) {
+    case 0:
+      return positive?"XAXIS_RIGHT_SWITCH":"XAXIS_LEFT_SWITCH";
+    case 1:
+      return positive?"YAXIS_UP_SWITCH":"YAXIS_DOWN_SWITCH";
+    case 2:
+      return positive?"ZAXIS_POS_SWITCH":"ZAXIS_NEG_SWITCH";
+    case 3:
+      return positive?"RXAXIS_POS_SWITCH":"RXAXIS_NEG_SWITCH";
+    case 4:
+      return positive?"RYAXIS_POS_SWITCH":"RYAXIS_NEG_SWITCH";
+    default:
+      return "OOPS";
+    }
+  }
+}
+
+std::string getMameKeyName(SDL_Keycode key) {
+  switch (key) {
+  case SDLK_ESCAPE:
+    return "ESC";
+  case SDLK_MINUS:
+    return "MINUS";
+  case SDLK_EQUALS:
+    return "EQUALS";
+  case SDLK_BACKSPACE:
+    return "BACKSPACE";
+  case SDLK_TAB:
+    return "TAB";
+  case SDLK_LEFTBRACKET:
+    return "OPENBRACE";
+  case SDLK_RIGHTBRACKET:
+    return "CLOSEBRACE";
+  case SDLK_RETURN:
+    return "RETURN";
+  case SDLK_LCTRL:
+    return "LCONTROL";
+  case SDLK_RCTRL:
+    return "RCONTROL";
+  case SDLK_LSHIFT:
+    return "LSHIFT";
+  case SDLK_RSHIFT:
+    return "RSHIFT";
+    //TODO: There are more, but I covered the major ones.
+  default:
+    std::string s = SDL_GetKeyName(key);
+    transform(s.begin(), s.end(), s.begin(), ::toupper);
+    return s;
+  }
+}
+
+std::string Input::mameString(int deviceIndex, bool analog) {
+  switch(type)
+  {
+  case TYPE_BUTTON:
+    return std::string("JOYCODE_") + std::to_string(deviceIndex+1) + std::string("_BUTTON") + std::to_string(id+1);
+  case TYPE_AXIS:
+    return std::string("JOYCODE_") + std::to_string(deviceIndex+1) + std::string("_") + axisIndexToMameName(id,value>0, analog);
+  case TYPE_HAT:
+    return std::string("JOYCODE_") + std::to_string(deviceIndex+1) + std::string("_HAT") + std::to_string(id+1) + getHatDirString();
+  case TYPE_KEY:
+    return std::string("KEYCODE_") + getMameKeyName((SDL_Keycode)id);
+  case TYPE_COUNT:
+    return std::string("OOPS");
+  }
+}
+
 std::string inputCategoryToString(InputCategory category) {
   switch (category) {
     case INPUT_UP:
@@ -16,14 +143,22 @@ std::string inputCategoryToString(InputCategory category) {
       return "left";
     case INPUT_RIGHT:
       return "right";
-    case INPUT_JOYSTICK1_Y:
-      return "j1y";
-    case INPUT_JOYSTICK1_X:
-      return "j1x";
-    case INPUT_JOYSTICK2_Y:
-      return "j2y";
-    case INPUT_JOYSTICK2_X:
-      return "j2x";
+    case INPUT_JOYSTICK1_UP:
+      return "j1up";
+    case INPUT_JOYSTICK1_DOWN:
+      return "j1down";
+    case INPUT_JOYSTICK1_LEFT:
+      return "j1left";
+    case INPUT_JOYSTICK1_RIGHT:
+      return "j1right";
+    case INPUT_JOYSTICK2_UP:
+      return "j2up";
+    case INPUT_JOYSTICK2_DOWN:
+      return "j2down";
+    case INPUT_JOYSTICK2_LEFT:
+      return "j2left";
+    case INPUT_JOYSTICK2_RIGHT:
+      return "j2right";
     case INPUT_4B_LEFT:
       return "4bl";
     case INPUT_4B_DOWN:
@@ -32,18 +167,10 @@ std::string inputCategoryToString(InputCategory category) {
       return "4br";
     case INPUT_4B_UP:
       return "4bu";
-    case INPUT_6B_BOTTOM_LEFT:
-      return "6bbl";
-    case INPUT_6B_BOTTOM_CENTER:
-      return "6bbc";
-    case INPUT_6B_BOTTOM_RIGHT:
-      return "6bbr";
-    case INPUT_6B_TOP_LEFT:
-      return "6btl";
-    case INPUT_6B_TOP_CENTER:
-      return "6btc";
     case INPUT_6B_TOP_RIGHT:
       return "6btr";
+    case INPUT_6B_BOTTOM_RIGHT:
+      return "6bbr";
     case INPUT_START:
       return "start";
     case INPUT_SELECT:
@@ -67,25 +194,95 @@ std::string inputCategoryToString(InputCategory category) {
   }
 }
 
+std::vector<std::string> inputCategoryToMameStrings(InputCategory category, int player) {
+  std::string retval = std::string("P") + std::to_string(player+1) + std::string("_");
+  switch (category) {
+    case INPUT_UP:
+      return {retval + std::string("HAT_UP")};
+    case INPUT_DOWN:
+      return {retval + std::string("HAT_DOWN")};
+    case INPUT_LEFT:
+      return {retval + std::string("HAT_LEFT")};
+    case INPUT_RIGHT:
+      return {retval + std::string("HAT_RIGHT")};
+    case INPUT_JOYSTICK1_UP:
+      return {retval + std::string("JOYSTICK_UP"),
+          retval + std::string("JOYSTICKLEFT_UP"),
+          retval + std::string("AD_STICK_Y")};
+    case INPUT_JOYSTICK1_DOWN:
+      return {retval + std::string("JOYSTICK_DOWN"),
+          retval + std::string("JOYSTICKLEFT_DOWN")};
+    case INPUT_JOYSTICK1_LEFT:
+      return {retval + std::string("JOYSTICK_LEFT"),
+          retval + std::string("JOYSTICKLEFT_LEFT"),
+          retval + std::string("AD_STICK_X")};
+    case INPUT_JOYSTICK1_RIGHT:
+      return {retval + std::string("JOYSTICK_RIGHT"),
+          retval + std::string("JOYSTICKLEFT_RIGHT")};
+    case INPUT_JOYSTICK2_UP:
+      return {retval + std::string("JOYSTICKRIGHT_UP"),
+          retval + std::string("PADDLE")};
+    case INPUT_JOYSTICK2_DOWN:
+      return {retval + std::string("JOYSTICKRIGHT_DOWN")};
+    case INPUT_JOYSTICK2_LEFT:
+      return {retval + std::string("JOYSTICKRIGHT_LEFT"),
+          retval + std::string("AD_STICK_Z")};
+    case INPUT_JOYSTICK2_RIGHT:
+      return {retval + std::string("JOYSTICKRIGHT_RIGHT")};
+    case INPUT_4B_LEFT:
+      return {retval + std::string("BUTTON1")};
+    case INPUT_4B_DOWN:
+      return {retval + std::string("BUTTON2")};
+    case INPUT_4B_RIGHT:
+      return {retval + std::string("BUTTON3")};
+    case INPUT_4B_UP:
+      return {retval + std::string("BUTTON4")};
+    case INPUT_6B_TOP_RIGHT:
+      return {retval + std::string("BUTTON5")};
+    case INPUT_6B_BOTTOM_RIGHT:
+      return {retval + std::string("BUTTON6")};
+    case INPUT_START:
+      return {retval + std::string("START")};
+    case INPUT_SELECT:
+      return {retval + std::string("SELECT")};
+    case INPUT_L1:
+      return {retval + std::string("SHOULDER_BUTTON1")};
+    case INPUT_R1:
+      return {retval + std::string("SHOULDER_BUTTON2")};
+    case INPUT_L2:
+      return {retval + std::string("SHOULDER_BUTTON3")};
+    case INPUT_R2:
+      return {retval + std::string("SHOULDER_BUTTON4")};
+    case INPUT_L3:
+      return {retval + std::string("JOYSTICK_BUTTON1")};
+    case INPUT_R3:
+      return {retval + std::string("JOYSTICK_BUTTON2")};
+    case INPUT_HOTKEY:
+      return {};
+    case INPUT_END:
+      return {};
+  }
+}
+
 InputCategory stringToInputCategory(const std::string &name) {
   if (name == "up") { return INPUT_UP; }
   if (name == "down") { return INPUT_DOWN; }
   if (name == "left") { return INPUT_LEFT; }
   if (name == "right") { return INPUT_RIGHT; }
-  if (name == "j1y") { return INPUT_JOYSTICK1_Y; }
-  if (name == "j1x") { return INPUT_JOYSTICK1_X; }
-  if (name == "j2y") { return INPUT_JOYSTICK2_Y; }
-  if (name == "j2x") { return INPUT_JOYSTICK2_X; }
+  if (name == "j1up") { return INPUT_JOYSTICK1_UP; }
+  if (name == "j1down") { return INPUT_JOYSTICK1_DOWN; }
+  if (name == "j1left") { return INPUT_JOYSTICK1_LEFT; }
+  if (name == "j1right") { return INPUT_JOYSTICK1_RIGHT; }
+  if (name == "j2up") { return INPUT_JOYSTICK2_UP; }
+  if (name == "j2down") { return INPUT_JOYSTICK2_DOWN; }
+  if (name == "j2left") { return INPUT_JOYSTICK2_LEFT; }
+  if (name == "j2right") { return INPUT_JOYSTICK2_RIGHT; }
   if (name == "4bl") { return INPUT_4B_LEFT; }
   if (name == "4bd") { return INPUT_4B_DOWN; }
   if (name == "4br") { return INPUT_4B_RIGHT; }
   if (name == "4bu") { return INPUT_4B_UP; }
-  if (name == "6bbl") { return INPUT_6B_BOTTOM_LEFT; }
-  if (name == "6bbc") { return INPUT_6B_BOTTOM_CENTER; }
-  if (name == "6bbr") { return INPUT_6B_BOTTOM_RIGHT; }
-  if (name == "6btl") { return INPUT_6B_TOP_LEFT; }
-  if (name == "6btc") { return INPUT_6B_TOP_CENTER; }
   if (name == "6btr") { return INPUT_6B_TOP_RIGHT; }
+  if (name == "6bbr") { return INPUT_6B_BOTTOM_RIGHT; }
   if (name == "start") { return INPUT_START; }
   if (name == "select") { return INPUT_SELECT; }
   if (name == "l1") { return INPUT_L1; }
@@ -296,4 +493,30 @@ void InputConfig::writeToXML(pugi::xml_node parent)
 		input.append_attribute("id").set_value(iterator->second.id);
 		input.append_attribute("value").set_value(iterator->second.value);
 	}
+}
+
+std::string InputConfig::getMameNameForCategory(InputCategory ic, const std::string &mamePort, const std::string &sequence, int deviceIndex) {
+  if (mNameMap.find(ic) == mNameMap.end()) {
+    return "";
+  }
+  const Input &input = mNameMap[ic];
+  bool analog = mamePortIsAnalog(mamePort);
+  if (!analog) {
+    return mNameMap[ic].mameString(deviceIndex, false);
+  } else {
+    // If analog, it depends on the sequence
+    if (sequence == "standard") {
+      // Only accept analog inputs
+      if (input.type != TYPE_AXIS) {
+        return "";
+      }
+      return mNameMap[ic].mameString(deviceIndex, analog);
+    } else {
+      // Only accept non-analog inputs
+      if (input.type == TYPE_AXIS) {
+        return "";
+      }
+      return mNameMap[ic].mameString(deviceIndex, analog);
+    }
+  }
 }

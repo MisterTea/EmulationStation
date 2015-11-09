@@ -24,20 +24,20 @@ enum InputCategory {
   INPUT_DOWN,
   INPUT_LEFT,
   INPUT_RIGHT,
-  INPUT_JOYSTICK1_Y,
-  INPUT_JOYSTICK1_X,
-  INPUT_JOYSTICK2_Y,
-  INPUT_JOYSTICK2_X,
+  INPUT_JOYSTICK1_UP,
+  INPUT_JOYSTICK1_DOWN,
+  INPUT_JOYSTICK1_LEFT,
+  INPUT_JOYSTICK1_RIGHT,
+  INPUT_JOYSTICK2_UP,
+  INPUT_JOYSTICK2_DOWN,
+  INPUT_JOYSTICK2_LEFT,
+  INPUT_JOYSTICK2_RIGHT,
   INPUT_4B_LEFT,
   INPUT_4B_DOWN,
   INPUT_4B_RIGHT,
   INPUT_4B_UP,
-  INPUT_6B_BOTTOM_LEFT,
-  INPUT_6B_BOTTOM_CENTER,
-  INPUT_6B_BOTTOM_RIGHT,
-  INPUT_6B_TOP_LEFT,
-  INPUT_6B_TOP_CENTER,
   INPUT_6B_TOP_RIGHT,
+  INPUT_6B_BOTTOM_RIGHT,
   INPUT_START,
   INPUT_SELECT,
   INPUT_L1,
@@ -51,6 +51,11 @@ enum InputCategory {
 };
 
 std::string inputCategoryToString(InputCategory category);
+
+std::vector<std::string> inputCategoryToMameStrings(InputCategory category, int player);
+
+bool mamePortIsAnalog(const std::string &mamePort);
+InputCategory reverseInputCategory(InputCategory ic);
 
 struct Input
 {
@@ -72,6 +77,19 @@ public:
 
 	Input(int dev, InputType t, int i, int val, bool conf) : device(dev), type(t), id(i), value(val), configured(conf)
 	{
+	}
+
+  std::string getHatDirString()
+	{
+		if(value & SDL_HAT_UP)
+			return "UP";
+		else if(value & SDL_HAT_DOWN)
+			return "DOWN";
+		else if(value & SDL_HAT_LEFT)
+			return "LEFT";
+		else if(value & SDL_HAT_RIGHT)
+			return "RIGHT";
+		return "OOPS";
 	}
 
 	InputCategory getHatDir(int val)
@@ -111,6 +129,8 @@ public:
 
 		return stream.str();
 	}
+
+  std::string mameString(int deviceIndex, bool analog);
 };
 
 class InputConfig
@@ -138,6 +158,8 @@ public:
 	void writeToXML(pugi::xml_node parent);
 
 	bool isConfigured();
+
+  std::string getMameNameForCategory(InputCategory ic, const std::string &mamePort, const std::string &sequence, int deviceIndex);
 
 private:
 	// Returns true if there is an Input mapped to this name, false otherwise.

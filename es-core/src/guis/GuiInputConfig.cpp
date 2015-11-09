@@ -15,19 +15,29 @@ using namespace boost::locale;
 static const int AXIS = 0;
 static const int BTN = 1;
 static const int HAT = 2;
-static const bool inputSkippable[INPUT_END] = { false, false,   false,   false,     true,              true,         true,             true,      false,  false,  true,   true, true, true, true, true, true, true, false,    false,     true,      true, true, true, true, true,  false};
-static const int inputTypes[INPUT_END] = {     HAT,     HAT,   HAT,    HAT ,        AXIS,             AXIS,          AXIS,            AXIS,       BTN,    BTN,   BTN,   BTN,    BTN,    BTN, BTN,    BTN,   BTN,   BTN,    BTN,    BTN,        BTN,      BTN,     BTN,  BTN, BTN,  BTN,  BTN};
+static const bool inputSkippable[INPUT_END] = {
+  false, false, false, false,
+  true, true, true, true,
+  true, true, true, true,
+  false,  false,  true,   true, true, true,
+  false,    false,     true,      true, true, true, true, true,  false};
+static const int inputTypes[INPUT_END] = {
+  HAT,     HAT,   HAT,    HAT,
+  AXIS, AXIS, AXIS, AXIS,
+  AXIS, AXIS, AXIS, AXIS,
+  BTN, BTN, BTN,    BTN,   BTN,   BTN,    BTN,    BTN,        BTN,      BTN,     BTN,  BTN, BTN,  BTN,  BTN};
 static std::string inputDispName[INPUT_END] = {
   gettext("UP"), gettext("DOWN"), gettext("LEFT"), gettext("RIGHT"),
-  gettext("JOYSTICK 1 UP"), gettext("JOYSTICK 1 LEFT"),gettext("JOYSTICK 2 UP"), gettext("JOYSTICK 2 LEFT"),
-  "4-Button Left",    "4-B Down",   "4-B Right",   "4-B Up",
-  "6-B Bottom-Left",   "6-B Bottom",   "6-B Bottom-Right", "6-B Top-Left",   "6-B Top",   "6-B Top-Right",
-  "START", "SELECT ", gettext("PAGE UP"), gettext("PAGE DOWN"),  "L2", "R2", "L3", "R3",gettext("HOTKEY") };
+  gettext("JOYSTICK 1 UP"), gettext("JOYSTICK 1 DOWN"), gettext("JOYSTICK 1 LEFT"), gettext("JOYSTICK 1 RIGHT"),
+  gettext("JOYSTICK 2 UP"), gettext("JOYSTICK 2 DOWN"), gettext("JOYSTICK 2 LEFT"), gettext("JOYSTICK 2 RIGHT"),
+  "4-Button Left",    "4-B Down",   "4-B Right",   "4-B Up", "6-B Top-Right", "6-B Bottom-Right",
+  "START", "SELECT ", gettext("L1"), gettext("R1"),  "L2", "R2", "L3", "R3",gettext("HOTKEY") };
 static const char* inputIcon[INPUT_END] = {
   ":/help/dpad_up.svg", ":/help/dpad_down.svg", ":/help/dpad_left.svg", ":/help/dpad_right.svg",
   ":/help/joystick_up.svg", ":/help/joystick_left.svg", ":/help/joystick_up.svg", ":/help/joystick_left.svg",
+  ":/help/joystick_up.svg", ":/help/joystick_left.svg", ":/help/joystick_up.svg", ":/help/joystick_left.svg",
   ":/help/button_x.svg", ":/help/button_a.svg", ":/help/button_b.svg", ":/help/button_y.svg",
-  ":/help/button_a.svg", ":/help/button_a.svg", ":/help/button_a.svg", ":/help/button_a.svg",":/help/button_a.svg", ":/help/button_a.svg",
+  ":/help/button_x.svg", ":/help/button_x.svg", // TODO: Add more descriptive icons
   ":/help/button_start.svg", ":/help/button_select.svg",
   ":/help/button_l.svg", ":/help/button_r.svg", ":/help/button_l2.svg", ":/help/button_r2.svg",":/help/button_l3.svg", ":/help/button_r3.svg", ":/help/button_hotkey.svg" };
 
@@ -79,7 +89,7 @@ GuiInputConfig::GuiInputConfig(Window* window, InputConfig* target, bool reconfi
 	for(int i = 0; i < INPUT_END; i++)
 	{
 		if(inputTypes[i] == AXIS && !hasAxis){
-			continue;
+			//continue;
 		}
 		ComponentListRow row;
 		// icon
