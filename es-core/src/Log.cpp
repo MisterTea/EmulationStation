@@ -68,6 +68,8 @@ Log::~Log()
 
 	//if it's an error, also print to console
 	//print all messages if using --debug
-	if(messageLevel == LogError || reportingLevel >= LogDebug)
+	if(messageLevel == LogError || reportingLevel >= LogDebug) {
 		fprintf(stderr, "%s", os.str().c_str());
+		fflush(stderr);
+	}
 }

@@ -25,6 +25,10 @@
 #include "resources/Font.h"
 #include "RecalboxSystem.h"
 
+#ifdef FREEIMAGE_LIB
+#include <FreeImage.h>
+#endif
+
 #ifdef WIN32
 #include <windows.h>
 #endif
@@ -207,6 +211,10 @@ int setLocale(char * argv1)
 
 int main(int argc, char* argv[])
 {
+#ifdef FREEIMAGE_LIB
+  FreeImage_Initialise();
+#endif
+
 	unsigned int width = 0;
 	unsigned int height = 0;
 
