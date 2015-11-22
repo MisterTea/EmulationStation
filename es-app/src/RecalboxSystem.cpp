@@ -7,7 +7,6 @@
 
 #include "RecalboxSystem.h"
 #include <stdlib.h>
-#include <sys/statvfs.h>
 #include <sstream>
 #include "Settings.h"
 #include <iostream>
@@ -19,11 +18,16 @@
 #include "VolumeControl.h"
 
 #include <stdio.h>
-#include <sys/types.h>
+
+#ifndef WIN32
+#include <sys/statvfs.h>
 #include <ifaddrs.h>
 #include <netinet/in.h>
-#include <string.h>
 #include <arpa/inet.h>
+#endif
+
+#include <sys/types.h>
+#include <string.h>
 
 
 RecalboxSystem::RecalboxSystem() {
@@ -39,6 +43,9 @@ RecalboxSystem *RecalboxSystem::getInstance() {
 }
 
 unsigned long RecalboxSystem::getFreeSpaceGB(std::string mountpoint) {
+#ifdef WIN32
+  return 0;
+#else
     struct statvfs fiData;
     const char *fnPath = mountpoint.c_str();
     int free = 0;
@@ -46,9 +53,13 @@ unsigned long RecalboxSystem::getFreeSpaceGB(std::string mountpoint) {
         free = (fiData.f_bfree * fiData.f_bsize) / (1024 * 1024 * 1024);
     }
     return free;
+#endif
 }
 
 std::string RecalboxSystem::getFreeSpaceInfo() {
+#ifdef WIN32
+  return "";
+#else
     struct statvfs fiData;
     std::string sharePart = Settings::getInstance()->getString("SharePartition");
     if (sharePart.size() > 0) {
@@ -68,16 +79,20 @@ std::string RecalboxSystem::getFreeSpaceInfo() {
     } else {
         return "ERROR";
     }
+#endif
 }
 
 bool RecalboxSystem::isFreeSpaceLimit() {
+#ifdef WIN32
+  return "";
+#else
     std::string sharePart = Settings::getInstance()->getString("SharePartition");
     if (sharePart.size() > 0) {
         return getFreeSpaceGB(sharePart) < 2;
     } else {
         return "ERROR";
     }
-
+#endif
 }
 
 std::string RecalboxSystem::getVersion() {
@@ -355,6 +370,9 @@ bool RecalboxSystem::shutdown() {
 }
 
 std::string RecalboxSystem::getIpAdress() {
+#ifdef WIN32
+  return "NOT AVAILABLE";
+#else
     struct ifaddrs *ifAddrStruct = NULL;
     struct ifaddrs *ifa = NULL;
     void *tmpAddrPtr = NULL;
@@ -397,4 +415,5 @@ std::string RecalboxSystem::getIpAdress() {
     }
     if (ifAddrStruct != NULL) freeifaddrs(ifAddrStruct);
     return result;
+#endif
 }

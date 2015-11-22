@@ -1,9 +1,7 @@
 #ifndef _LOG_H_
 #define _LOG_H_
 
-#define LOG(level)                             \
-  if(level > Log::getReportingLevel()) {}      \
-  else Log().get(level)
+#define LOG(level) Log().get(level)
 
 #include <string>
 #include <sstream>

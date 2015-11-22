@@ -33,6 +33,10 @@
 #include <windows.h>
 #endif
 
+#ifdef __MINGW32__
+#include "direct.h"
+#endif
+
 namespace fs = boost::filesystem;
 
 bool parseArgs(int argc, char* argv[], unsigned int* width, unsigned int* height)

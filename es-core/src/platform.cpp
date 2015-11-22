@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <boost/filesystem.hpp>
 #include <iostream>
-#include <sys/statvfs.h>
 #include <sstream>
 #include "Settings.h"
 
