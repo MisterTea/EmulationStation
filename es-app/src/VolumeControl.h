@@ -10,8 +10,8 @@
 	#include <fcntl.h>
 	#include <alsa/asoundlib.h>
 #elif defined(WIN32) || defined(_WIN32)
-	#include <Windows.h>
-	#include <MMSystem.h>
+	#include <windows.h>
+	#include <mmsystem.h>
 	#include <mmdeviceapi.h>
 	#include <endpointvolume.h>
 #endif

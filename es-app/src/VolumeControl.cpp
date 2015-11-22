@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "VolumeControl.h"
 
 #include "Log.h"
@@ -284,7 +286,7 @@ int VolumeControl::getVolume() const
 		mixerControlDetails.cbDetails = sizeof(MIXERCONTROLDETAILS_UNSIGNED);
 		if (mixerGetControlDetails((HMIXEROBJ)mixerHandle, &mixerControlDetails, MIXER_GETCONTROLDETAILSF_VALUE) == MMSYSERR_NOERROR) 
 		{
-			volume = (uint8_t)round((value.dwValue * 100) / 65535);
+		  volume = (uint8_t)std::round((value.dwValue * 100) / 65535);
 		}
 		else
 		{
@@ -297,7 +299,7 @@ int VolumeControl::getVolume() const
 		float floatVolume = 0.0f; //0-1
 		if (endpointVolume->GetMasterVolumeLevelScalar(&floatVolume) == S_OK)
 		{
-			volume = (uint8_t)round(floatVolume * 100.0f);
+		  volume = (uint8_t)std::round(floatVolume * 100.0f);
 		}else{
 			LOG(LogError) << "VolumeControl::getVolume() - Failed to get master volume!";
 		}

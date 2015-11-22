@@ -26,7 +26,7 @@
 #include "RecalboxSystem.h"
 
 #ifdef WIN32
-#include <Windows.h>
+#include <windows.h>
 #endif
 
 namespace fs = boost::filesystem;
