@@ -255,11 +255,10 @@ void DateTimeComponent::updateTextCache()
 
 	if(mAutoSize)
 	{
-		mSize = mTextCache->metrics.size;
-
-		mAutoSize = false;
-		if(getParent())
-			getParent()->onSizeChanged();
+	  mAutoSize=false;
+	  if(getParent())
+	    getParent()->onSizeChanged();
+	  mAutoSize=true;
 	}
 
 	//set up cursor positions
