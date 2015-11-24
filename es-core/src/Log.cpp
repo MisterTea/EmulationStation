@@ -65,6 +65,7 @@ Log::~Log()
 	}
 
 	fprintf(getOutput(), "%s", os.str().c_str());
+	fflush(getOutput());
 
 	//if it's an error, also print to console
 	//print all messages if using --debug
