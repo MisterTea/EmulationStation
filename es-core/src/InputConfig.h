@@ -52,7 +52,7 @@ enum InputCategory {
 
 std::string inputCategoryToString(InputCategory category);
 
-std::vector<std::string> inputCategoryToMameStrings(InputCategory category, int player);
+std::vector<std::string> inputCategoryToMameStrings(InputCategory category, const std::string &machine, int player);
 
 bool mamePortIsAnalog(const std::string &mamePort);
 InputCategory reverseInputCategory(InputCategory ic);

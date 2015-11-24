@@ -100,7 +100,7 @@ std::string getMameKeyName(SDL_Keycode key) {
   case SDLK_RIGHTBRACKET:
     return "CLOSEBRACE";
   case SDLK_RETURN:
-    return "RETURN";
+    return "ENTER";
   case SDLK_LCTRL:
     return "LCONTROL";
   case SDLK_RCTRL:
@@ -194,8 +194,9 @@ std::string inputCategoryToString(InputCategory category) {
   }
 }
 
-std::vector<std::string> inputCategoryToMameStrings(InputCategory category, int player) {
-  std::string retval = std::string("P") + std::to_string(player+1) + std::string("_");
+std::vector<std::string> inputCategoryToMameStrings(InputCategory category, const std::string &machine, int player) {
+  std::string playerName = std::to_string(player+1);
+  std::string retval = std::string("P") + playerName + std::string("_");
   switch (category) {
     case INPUT_UP:
       return {retval + std::string("HAT_UP")};
@@ -230,33 +231,87 @@ std::vector<std::string> inputCategoryToMameStrings(InputCategory category, int 
     case INPUT_JOYSTICK2_RIGHT:
       return {retval + std::string("JOYSTICKRIGHT_RIGHT")};
     case INPUT_4B_LEFT:
+      if (machine == "sf2") {
+	return {retval + std::string("BUTTON1")};
+      }
       return {retval + std::string("BUTTON1")};
     case INPUT_4B_DOWN:
+      if (machine == "sf2") {
+	return {retval + std::string("BUTTON4")};
+      }
       return {retval + std::string("BUTTON2")};
     case INPUT_4B_RIGHT:
+      if (machine == "sf2") {
+	return {retval + std::string("BUTTON5")};
+      }
       return {retval + std::string("BUTTON3")};
     case INPUT_4B_UP:
+      if (machine == "sf2") {
+	return {retval + std::string("BUTTON2")};
+      }
       return {retval + std::string("BUTTON4")};
     case INPUT_6B_TOP_RIGHT:
+      if (machine == "sf2") {
+	return {retval + std::string("BUTTON3")};
+      }
       return {retval + std::string("BUTTON5")};
     case INPUT_6B_BOTTOM_RIGHT:
+      if (machine == "sf2") {
+	return {retval + std::string("BUTTON6")};
+      }
       return {retval + std::string("BUTTON6")};
     case INPUT_START:
-      return {retval + std::string("START")};
+      return {
+	retval + std::string("START"),
+	  std::string("START") + playerName
+	  };
     case INPUT_SELECT:
-      return {retval + std::string("SELECT")};
+      return {
+	retval + std::string("SELECT"),
+	  std::string("COIN") + playerName
+	  };
     case INPUT_L1:
-      return {retval + std::string("SHOULDER_BUTTON1")};
+      if (machine == "snes") {
+	return {retval + std::string("BUTTON6")};
+      }
+      if (machine == "gba") {
+	return {retval + std::string("BUTTON3")};
+      }
+      if (machine == "psx") {
+	return {retval + std::string("BUTTON6")};
+      }
+      return {};
     case INPUT_R1:
-      return {retval + std::string("SHOULDER_BUTTON2")};
+      if (machine == "snes") {
+	return {retval + std::string("BUTTON5")};
+      }
+      if (machine == "gba") {
+	return {retval + std::string("BUTTON4")};
+      }
+      if (machine == "psx") {
+	return {retval + std::string("BUTTON5")};
+      }
+      return {};
     case INPUT_L2:
-      return {retval + std::string("SHOULDER_BUTTON3")};
+      if (machine == "psx") {
+	return {retval + std::string("BUTTON8")};
+      }
+      return {};
     case INPUT_R2:
-      return {retval + std::string("SHOULDER_BUTTON4")};
+      if (machine == "psx") {
+	return {retval + std::string("BUTTON7")};
+      }
+      return {};
     case INPUT_L3:
-      return {retval + std::string("JOYSTICK_BUTTON1")};
+      if (machine == "psx") {
+	return {retval + std::string("BUTTON10")};
+      }
+      return {};
     case INPUT_R3:
-      return {retval + std::string("JOYSTICK_BUTTON2")};
+      if (machine == "psx") {
+	return {retval + std::string("BUTTON9")};
+      }
+      return {};
     case INPUT_HOTKEY:
       return {};
     case INPUT_END:

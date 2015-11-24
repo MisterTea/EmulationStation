@@ -364,17 +364,22 @@ void InputManager::writeDeviceConfig(InputConfig* config)
 
 	config->writeToXML(root);
 	doc.save_file(path.c_str());
+	createMameXML();
 }
 
 void InputManager::createMameXML() {
+  FILE *fp = fopen("mame/ctrlr/esmame.cfg","w");
   std::vector<std::string> guids;
   for (auto &it : mInputConfigs) {
     guids.push_back(it.second->getDeviceGUIDString() + std::to_string(it.second->getDeviceIndex()));
-    printf("GUID: %s\n",guids.back().c_str());
+    fprintf(fp,"GUID: %s\n",guids.back().c_str());
   }
   sort(guids.begin(), guids.end());
   // TODO: Make a setting so keyboard is solely player 1.
-  printf("<?xml version=\"1.0\"?>\n<mameconfig version=\"10\">\n<system name=\"default\">\n<input>\n");
+  fprintf(fp,"<?xml version=\"1.0\"?>\n<mameconfig version=\"10\">\n");
+  std::vector<std::string> machines = {"default","snes","gba","psx","sf2"};
+  for (std::string machine : machines) {
+    fprintf(fp,"<system name=\"%s\">\n<input>\n",machine.c_str());
   for (int player=0;player<std::max(1,int(guids.size()));player++) {
     std::string playerControllerGuid = "";
     if (player < guids.size()) {
@@ -382,7 +387,7 @@ void InputManager::createMameXML() {
     }
     for (int a=0;a<INPUT_END;a++) {
       InputCategory ic = (InputCategory)a;
-      std::vector<std::string> icNames = inputCategoryToMameStrings(ic, player);
+      std::vector<std::string> icNames = inputCategoryToMameStrings(ic, machine, player);
       for (std::string portName : icNames) {
         bool startedPort=false;
         std::vector<std::string> sequences = {"standard"};
@@ -420,21 +425,24 @@ void InputManager::createMameXML() {
           }
           if (totalInput.length()) {
             if (!startedPort) {
-              printf("<port type=\"%s\">\n", portName.c_str());
+              fprintf(fp,"<port type=\"%s\">\n", portName.c_str());
               startedPort=true;
             }
-            printf("<newseq type=\"%s\">\n", sequence.c_str());
-            printf("%s\n",totalInput.c_str());
-            printf("</newseq>\n");
+            fprintf(fp,"<newseq type=\"%s\">\n", sequence.c_str());
+            fprintf(fp,"%s\n",totalInput.c_str());
+            fprintf(fp,"</newseq>\n");
           }
         }
         if (startedPort) {
-            printf("</port>\n");
+            fprintf(fp,"</port>\n");
         }
       }
     }
   }
-  printf("</input>\n</system>\n</mameconfig>\n");
+  fprintf(fp,"</input>\n</system>\n");
+  }
+  fprintf(fp,"</mameconfig>\n");
+  fclose(fp);
 }
 
 std::string InputManager::getConfigPath()
