@@ -1,0 +1,22 @@
+{
+  "name": "ESMAME",
+  "version": "2.0.0",
+  "homepage": "https://github.com/MisterTea/EmulationStation",
+  "authors": [
+    "Jason Gauci <jgmath2000@gmail.com>"
+  ],
+  "description": "Simple frontend for MAME",
+  "main": "index.html",
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "marked": "~0.3.5"
+  }
+}
