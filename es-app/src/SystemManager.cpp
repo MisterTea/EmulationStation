@@ -7,6 +7,8 @@
 #include "Settings.h"
 #include "views/ViewController.h"
 
+#include <boost/algorithm/string/replace.hpp>
+
 namespace fs = boost::filesystem;
 
 SystemManager* SystemManager::sInstance = NULL;
@@ -95,6 +97,10 @@ void SystemManager::loadConfig()
 		std::vector<std::string> extensions = readList(system.child("extension").text().get());
 
 		cmd = system.child("command").text().get();
+		if (sizeof(long) == sizeof(int)) {
+		  // Handle 32-bit
+		  boost::replace_all(cmd, "mame64", "mame");
+		}
 
 		// platform id list
 		const char* platformList = system.child("platform").text().get();
