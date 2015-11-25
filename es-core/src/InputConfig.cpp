@@ -231,33 +231,51 @@ std::vector<std::string> inputCategoryToMameStrings(InputCategory category, cons
     case INPUT_JOYSTICK2_RIGHT:
       return {retval + std::string("JOYSTICKRIGHT_RIGHT")};
     case INPUT_4B_LEFT:
-      if (machine == "sf2") {
+      if (machine == "Street Fighter") {
+	return {retval + std::string("BUTTON1")};
+      }
+      if (machine == "Mortal Kombat") {
 	return {retval + std::string("BUTTON1")};
       }
       return {retval + std::string("BUTTON1")};
     case INPUT_4B_DOWN:
-      if (machine == "sf2") {
+      if (machine == "Street Fighter") {
+	return {retval + std::string("BUTTON4")};
+      }
+      if (machine == "Mortal Kombat") {
 	return {retval + std::string("BUTTON4")};
       }
       return {retval + std::string("BUTTON2")};
     case INPUT_4B_RIGHT:
-      if (machine == "sf2") {
+      if (machine == "Street Fighter") {
+	return {retval + std::string("BUTTON5")};
+      }
+      if (machine == "Mortal Kombat") {
 	return {retval + std::string("BUTTON5")};
       }
       return {retval + std::string("BUTTON3")};
     case INPUT_4B_UP:
-      if (machine == "sf2") {
+      if (machine == "Street Fighter") {
 	return {retval + std::string("BUTTON2")};
+      }
+      if (machine == "Mortal Kombat") {
+	return {retval + std::string("BUTTON3")};
       }
       return {retval + std::string("BUTTON4")};
     case INPUT_6B_TOP_RIGHT:
-      if (machine == "sf2") {
+      if (machine == "Street Fighter") {
 	return {retval + std::string("BUTTON3")};
+      }
+      if (machine == "Mortal Kombat") {
+	return {retval + std::string("BUTTON6")};
       }
       return {retval + std::string("BUTTON5")};
     case INPUT_6B_BOTTOM_RIGHT:
-      if (machine == "sf2") {
+      if (machine == "Street Fighter") {
 	return {retval + std::string("BUTTON6")};
+      }
+      if (machine == "Mortal Kombat") {
+	return {retval + std::string("BUTTON2")};
       }
       return {retval + std::string("BUTTON6")};
     case INPUT_START:

@@ -377,69 +377,144 @@ void InputManager::createMameXML() {
   sort(guids.begin(), guids.end());
   // TODO: Make a setting so keyboard is solely player 1.
   fprintf(fp,"<?xml version=\"1.0\"?>\n<mameconfig version=\"10\">\n");
-  std::vector<std::string> machines = {"default","snes","gba","psx","sf2"};
-  for (std::string machine : machines) {
-    fprintf(fp,"<system name=\"%s\">\n<input>\n",machine.c_str());
-  for (int player=0;player<std::max(1,int(guids.size()));player++) {
-    std::string playerControllerGuid = "";
-    if (player < guids.size()) {
-      playerControllerGuid = guids[player];
-    }
-    for (int a=0;a<INPUT_END;a++) {
-      InputCategory ic = (InputCategory)a;
-      std::vector<std::string> icNames = inputCategoryToMameStrings(ic, machine, player);
-      for (std::string portName : icNames) {
-        bool startedPort=false;
-        std::vector<std::string> sequences = {"standard"};
-        bool analog = mamePortIsAnalog(portName);
-        if (analog) {
-          sequences = {"standard","increment","decrement"};
-        }
-        for (std::string sequence : sequences) {
-          InputCategory icForSequence = ic;
-          if (sequence != "standard") {
-            if (reverseInputCategory(ic) == INPUT_END) {
-              // Only reversible inputs can be increment/decrement
-              continue;
-            }
-          }
-          if (sequence == "decrement") {
-            icForSequence = reverseInputCategory(ic);
-          }
-          std::string totalInput = "";
-          if (player==0) {
-            totalInput = mKeyboardInputConfig->getMameNameForCategory(icForSequence, portName, sequence, 0);
-          }
-          for (auto &it : mInputConfigs) {
-            std::string inputGuid = it.second->getDeviceGUIDString() + std::to_string(it.second->getDeviceIndex());
-            if (inputGuid != playerControllerGuid) {
-              continue;
-            }
-            std::string input = it.second->getMameNameForCategory(icForSequence, portName, sequence, player);
-            if (input.length()) {
-              if (totalInput.length()) {
-                totalInput += std::string(" OR ");
-              }
-              totalInput += input;
-            }
-          }
-          if (totalInput.length()) {
-            if (!startedPort) {
-              fprintf(fp,"<port type=\"%s\">\n", portName.c_str());
-              startedPort=true;
-            }
-            fprintf(fp,"<newseq type=\"%s\">\n", sequence.c_str());
-            fprintf(fp,"%s\n",totalInput.c_str());
-            fprintf(fp,"</newseq>\n");
-          }
-        }
-        if (startedPort) {
-            fprintf(fp,"</port>\n");
-        }
+  std::vector<std::string> inputMachineTypes = {"default","snes","gba","psx","sf2","Mortal Kombat"};
+  std::map<std::string,std::vector<std::string> > machineMappingMap;
+  machineMappingMap["default"] = {"default"};
+  machineMappingMap["snes"] = {"snes"};
+  machineMappingMap["gba"] = {"gba"};
+  machineMappingMap["psx"] = {"psx"};
+  machineMappingMap["Street Fighter"] = {
+    "sf2", "sf2eb", "sf2ed", "sf2ee", "sf2ua", "sf2ub", "sf2uc", "sf2ud", "sf2ue", "sf2uf", "sf2ug", "sf2ui", "sf2uk", "sf2j", "sf2ja", "sf2jc", "sf2jf", "sf2jh", "sf2jl", "sf2ebbl", "sf2ebbl2", "sf2ebbl3", "sf2stt", "sf2rk", "sf2qp1", "sf2thndr",
+    "sf2ce",
+    "sf2ceea",
+    "sf2ceua",
+    "sf2ceub",
+    "sf2ceuc",
+    "sf2ceja",
+    "sf2cejb",
+    "sf2cejc",
+    "sf2bhh",
+    "sf2rb",
+    "sf2rb2",
+    "sf2rb3",
+    "sf2red",
+    "sf2v004",
+    "sf2acc",
+    "sf2acca",
+    "sf2accp2",
+    "sf2amf",
+    "sf2amf2",
+    "sf2dkot2",
+    "sf2ceblp",
+    "sf2m2",
+    "sf2m3",
+    "sf2m4",
+    "sf2m5",
+    "sf2m6",
+    "sf2m7",
+    "sf2m8",
+    "sf2yyc",
+    "sf2koryu",
+    "sf2dongb",
+    "sf2hf",
+    "sf2hfu",
+    "sf2hfj",
+    "sfzch",
+    "sfach",
+    "sfzbch",
+    "ssf2tad",
+    "ssf2xjd",
+    "sfz2ad",
+    "sfz2jd",
+    "sfa3ud",
+    "sfz3jr2d",
+    "hsf2d",
+    "sfiii",
+    "sfiiiu",
+    "sfiiia",
+    "sfiiij",
+    "sfiiih",
+    "sfiiin",
+    "sfiiina",
+    "sfiii2",
+    "sfiii2j",
+    "sfiii2n",
+    "sfiii3",
+    "sfiii3u",
+    "sfiii3n",
+    "sfiii3r1",
+    "sfiii3ur1",
+    "sfiii3nr1",
+    "cps3bs32",
+    "cps3bs32a",
+    "ssf2mdb"
+  };
+  machineMappingMap["Mortal Kombat"] = {"mk", "mk2", "mkr4", "mktturbo", "mk2r32e", "mk2r31e", "mk2r30", "mk2r21", "mk2r20", "mk2r14", "mk2r11", "mk2r42", "mk2r91", "mk2cha1", "mk3", "mk3r20", "mk3r10", "mk3p40", "umk3", "umk3r11", "umk3r10", "mk3mdb"};
+  for (std::string inputMachineType : inputMachineTypes) {
+    std::vector<std::string> machines = machineMappingMap[inputMachineType];
+    for (std::string machine : machines) {
+      fprintf(fp,"<system name=\"%s\">\n<input>\n",machine.c_str());
+      for (int player=0;player<std::max(1,int(guids.size()));player++) {
+	std::string playerControllerGuid = "";
+	if (player < guids.size()) {
+	  playerControllerGuid = guids[player];
+	}
+	for (int a=0;a<INPUT_END;a++) {
+	  InputCategory ic = (InputCategory)a;
+	  std::vector<std::string> icNames = inputCategoryToMameStrings(ic, inputMachineType, player);
+	  for (std::string portName : icNames) {
+	    bool startedPort=false;
+	    std::vector<std::string> sequences = {"standard"};
+	    bool analog = mamePortIsAnalog(portName);
+	    if (analog) {
+	      sequences = {"standard","increment","decrement"};
+	    }
+	    for (std::string sequence : sequences) {
+	      InputCategory icForSequence = ic;
+	      if (sequence != "standard") {
+		if (reverseInputCategory(ic) == INPUT_END) {
+		  // Only reversible inputs can be increment/decrement
+		  continue;
+		}
+	      }
+	      if (sequence == "decrement") {
+		icForSequence = reverseInputCategory(ic);
+	      }
+	      std::string totalInput = "";
+	      if (player==0) {
+		totalInput = mKeyboardInputConfig->getMameNameForCategory(icForSequence, portName, sequence, 0);
+	      }
+	      for (auto &it : mInputConfigs) {
+		std::string inputGuid = it.second->getDeviceGUIDString() + std::to_string(it.second->getDeviceIndex());
+		if (inputGuid != playerControllerGuid) {
+		  continue;
+		}
+		std::string input = it.second->getMameNameForCategory(icForSequence, portName, sequence, player);
+		if (input.length()) {
+		  if (totalInput.length()) {
+		    totalInput += std::string(" OR ");
+		  }
+		  totalInput += input;
+		}
+	      }
+	      if (totalInput.length()) {
+		if (!startedPort) {
+		  fprintf(fp,"<port type=\"%s\">\n", portName.c_str());
+		  startedPort=true;
+		}
+		fprintf(fp,"<newseq type=\"%s\">\n", sequence.c_str());
+		fprintf(fp,"%s\n",totalInput.c_str());
+		fprintf(fp,"</newseq>\n");
+	      }
+	    }
+	    if (startedPort) {
+	      fprintf(fp,"</port>\n");
+	    }
+	  }
+	}
       }
+      fprintf(fp,"</input>\n</system>\n");
     }
-  }
-  fprintf(fp,"</input>\n</system>\n");
   }
   fprintf(fp,"</mameconfig>\n");
   fclose(fp);
