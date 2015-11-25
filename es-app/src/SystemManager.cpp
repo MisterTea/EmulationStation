@@ -110,8 +110,11 @@ void SystemManager::loadConfig()
 		themeFolder = system.child("theme").text().as_string(name.c_str());
 
 		// validate as best we can (make sure we're not missing required information)
-		if(!isValidSystemName(name) || path.empty() || extensions.empty() || cmd.empty())
-			throw ESException() << "System \"" << name << "\" is missing name, path, extension, or command!";
+		if(!isValidSystemName(name) || path.empty() || extensions.empty() || cmd.empty() || !boost::filesystem::is_directory(path)) {
+		  //throw ESException() << "System \"" << name << "\" is missing name, path, extension, or command!";
+		  LOG(LogWarning) << "System \"" << name << "\" has no valid path! Ignoring it.";
+		  continue;
+		}
 
 		// convert path to generic directory seperators
 		boost::filesystem::path genericPath(path);
