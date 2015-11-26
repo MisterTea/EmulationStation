@@ -97,8 +97,8 @@ void SystemManager::loadConfig()
 		std::vector<std::string> extensions = readList(system.child("extension").text().get());
 
 		cmd = system.child("command").text().get();
-		if (sizeof(long) == sizeof(int)) {
-		  // Handle 32-bit
+		if (!boost::filesystem::exists("mame/mame64.exe")) {
+		  // Handle 32-bit if 64-bit mame is missing
 		  boost::replace_all(cmd, "mame64", "mame");
 		}
 
