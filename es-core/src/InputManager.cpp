@@ -372,7 +372,6 @@ void InputManager::createMameXML() {
   std::vector<std::string> guids;
   for (auto &it : mInputConfigs) {
     guids.push_back(it.second->getDeviceGUIDString() + std::to_string(it.second->getDeviceIndex()));
-    fprintf(fp,"GUID: %s\n",guids.back().c_str());
   }
   sort(guids.begin(), guids.end());
   // TODO: Make a setting so keyboard is solely player 1.

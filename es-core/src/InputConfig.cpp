@@ -70,7 +70,7 @@ std::string axisIndexToMameName(int index, bool positive, bool analog) {
     case 0:
       return positive?"XAXIS_RIGHT_SWITCH":"XAXIS_LEFT_SWITCH";
     case 1:
-      return positive?"YAXIS_UP_SWITCH":"YAXIS_DOWN_SWITCH";
+      return positive?"YAXIS_DOWN_SWITCH":"YAXIS_UP_SWITCH";
     case 2:
       return positive?"ZAXIS_POS_SWITCH":"ZAXIS_NEG_SWITCH";
     case 3:
