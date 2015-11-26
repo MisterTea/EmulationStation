@@ -132,7 +132,7 @@ void thegamesdb_generate_scraper_requests(const ScraperSearchParams& params, std
 	if(cleanName.empty())
 		cleanName = params.game.getCleanName();
 
-	path += "name=" + HttpReq::urlEncode(cleanName);
+	path += "exactname=" + HttpReq::urlEncode(cleanName);
 
 	if(params.system->getPlatformIds().empty())
 	{
