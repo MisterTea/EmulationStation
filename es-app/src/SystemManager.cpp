@@ -109,13 +109,6 @@ void SystemManager::loadConfig()
 		// theme folder
 		themeFolder = system.child("theme").text().as_string(name.c_str());
 
-		// validate as best we can (make sure we're not missing required information)
-		if(!isValidSystemName(name) || path.empty() || extensions.empty() || cmd.empty() || !boost::filesystem::is_directory(path)) {
-		  //throw ESException() << "System \"" << name << "\" is missing name, path, extension, or command!";
-		  LOG(LogWarning) << "System \"" << name << "\" has no valid path! Ignoring it.";
-		  continue;
-		}
-
 		// convert path to generic directory seperators
 		boost::filesystem::path genericPath(path);
 		path = genericPath.generic_string();
@@ -123,6 +116,13 @@ void SystemManager::loadConfig()
 		// strip trailing slash
 		if(path[path.size() - 1] == '/')
 			path = path.erase(path.size() - 1);
+
+		// validate as best we can (make sure we're not missing required information)
+		if(!isValidSystemName(name) || extensions.empty() || cmd.empty() || !boost::filesystem::is_directory(getExpandedPath(path))) {
+		  //throw ESException() << "System \"" << name << "\" is missing name, path, extension, or command!";
+		  LOG(LogWarning) << "System \"" << name << "\" has no valid path (" << path << ")! Ignoring it.";
+		  continue;
+		}
 
 		SystemData* newSys = new SystemData(name, fullname, path, extensions, cmd, platformIds, themeFolder);
 		mDatabase.addMissingFiles(newSys);
