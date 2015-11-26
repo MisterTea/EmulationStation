@@ -94,8 +94,9 @@ void SystemData::launchGame(Window* window, FileData game) const
 	AudioManager::getInstance()->deinit();
 	VolumeControl::getInstance()->deinit();
 
-    std::string controlersConfig = InputManager::getInstance()->configureEmulators();
-	LOG(LogInfo) << "Controllers config : " << controlersConfig;
+	//std::string controlersConfig = InputManager::getInstance()->configureEmulators();
+	//LOG(LogInfo) << "Controllers config : " << controlersConfig;
+	// This causes crashes when loading the 2nd game.
 	window->deinit();
 
 	std::string command = mLaunchCommand;
@@ -105,7 +106,7 @@ void SystemData::launchGame(Window* window, FileData game) const
 	const std::string rom_raw = fs::path(game.getPath()).make_preferred().string();
 
 	command = strreplace(command, "%ROM%", rom);
-	command = strreplace(command, "%CONTROLLERSCONFIG%", controlersConfig);
+	//command = strreplace(command, "%CONTROLLERSCONFIG%", controlersConfig);
 	command = strreplace(command, "%SYSTEM%", this->mName);
 	command = strreplace(command, "%BASENAME%", basename);
 	command = strreplace(command, "%ROM_RAW%", rom_raw);
