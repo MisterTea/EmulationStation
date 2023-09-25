@@ -313,6 +313,10 @@ bool RecalboxSystem::disableWifi() {
     }
 }
 
+#ifdef _MSC_VER
+#define popen _popen
+#define pclose _pclose
+#endif
 
 std::string RecalboxSystem::getRecalboxConfig(std::string key) {
     std::ostringstream oss;

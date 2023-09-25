@@ -32,7 +32,7 @@ namespace fs = boost::filesystem;
 typedef FileSystemSelectorComponent fssc;
 typedef fssc::FileEntry fe;
 
-struct ModePredicter : public std::unary_function<const fe*, bool>
+struct ModePredicter
 {
 	ModePredicter(fssc::Mode m) : mode(m) {
 	}

@@ -1,8 +1,6 @@
-project("pugixml")
-
 set(PUGI_HEADERS
 	${CMAKE_CURRENT_SOURCE_DIR}/pugiconfig.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/pugixml.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/pugixml.hpp
 )
 
 set(PUGI_SOURCES

@@ -1,8 +1,6 @@
-project("sqlite3")
-
 set(SQLITE3_HEADERS
 	${CMAKE_CURRENT_SOURCE_DIR}/sqlite3.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/sqlite3ext.h
+	${CMAKE_CURRENT_SOURCE_DIR}/sqlite3ext.h
 )
 
 set(SQLITE3_SOURCES

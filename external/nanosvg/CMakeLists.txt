@@ -1,8 +1,6 @@
-project("nanosvg")
-
 set(NSVG_HEADERS
 	${CMAKE_CURRENT_SOURCE_DIR}/nanosvg.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/nanosvgrast.h
+	${CMAKE_CURRENT_SOURCE_DIR}/nanosvgrast.h
 )
 
 set(NSVG_SOURCES

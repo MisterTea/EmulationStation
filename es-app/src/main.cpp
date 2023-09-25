@@ -170,6 +170,10 @@ void delete_singletons_on_exit()
 
 std::string ExecutablePath = "";
 
+#include <direct.h>
+
+#define PATH_MAX 1024
+
 int setLocale(char * argv1)
 {
  	char path_save[PATH_MAX];

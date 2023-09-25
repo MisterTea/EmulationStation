@@ -1,5 +1,3 @@
-project("emulationstation")
-
 set(ES_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EmulationStation.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ESException.h
@@ -96,7 +94,7 @@ set(ES_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RecalboxSystem.cpp
 )
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # define OS specific sources and headers
 if(MSVC)
     LIST(APPEND ES_SOURCES
@@ -104,7 +102,7 @@ if(MSVC)
     )
 endif()
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # define target
 include_directories(${COMMON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_executable(emulationstation ${ES_SOURCES} ${ES_HEADERS})
@@ -122,10 +120,8 @@ if(MSVC)
     set_target_properties(emulationstation PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:WINDOWS")
 endif()
 
-
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # set up CPack install stuff so `make install` does something useful
-
 install(TARGETS emulationstation
     RUNTIME
     DESTINATION bin)
