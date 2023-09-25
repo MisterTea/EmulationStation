@@ -48,7 +48,7 @@ void Settings::setDefaults() {
 	mBoolMap["ParseGamelistOnly"] = false;
 	mBoolMap["DrawFramerate"] = false;
 	mBoolMap["ShowExit"] = true;
-	mBoolMap["Windowed"] = false;
+	mBoolMap["Windowed"] = true;
 
 #ifdef _RPI_
 	// don't enable VSync by default on the Pi, since it already
@@ -62,7 +62,7 @@ void Settings::setDefaults() {
 	mBoolMap["ShowHelpPrompts"] = true;
 	mBoolMap["ScrapeRatings"] = true;
 	mBoolMap["IgnoreGamelist"] = false;
-	mBoolMap["HideConsole"] = true;
+	mBoolMap["HideConsole"] = false;
 	mBoolMap["QuickSystemSelect"] = true;
     mBoolMap["FavoritesOnly"] = false;
 

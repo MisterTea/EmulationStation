@@ -1,0 +1,13 @@
+{
+  "dependencies": [
+    "freetype",
+    "freeimage",
+    "sdl2",
+    "sdl2-mixer",
+    "boost",
+    "boost-system",
+    "eigen3",
+    "curl",
+    "zlib"
+  ]
+}
