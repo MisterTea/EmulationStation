@@ -379,14 +379,14 @@ copy /Y ffmpeg\lib\swscale.lib ..
 echo:
 echo Setting up OpenSSL
 
-if exist Win64OpenSSL_Light-4_0_0.exe (
-  del Win64OpenSSL_Light-4_0_0.exe
+if exist Win64OpenSSL_Light*.exe (
+  del Win64OpenSSL_Light*.exe
 )
 
 if not exist "C:\Program Files\OpenSSL-Win64\libcrypto-4-x64.dll" (
-  curl -O https://slproweb.com/download/Win64OpenSSL_Light-4_0_1.exe
-  :: Run the installer.
-  .\Win64OpenSSL_Light-4_0_1.exe
+  curl -LO https://slproweb.com/download/Win64OpenSSL_Light-4_0_2.exe
+  :: Run the installer silently.
+  .\Win64OpenSSL_Light-4_0_2.exe /verysilent /sp- /suppressmsgboxes
 )
 
 :: Return to the root of the repository.
@@ -402,7 +402,10 @@ echo Copying DLL files from Windows\System32
 
 copy /Y C:\Windows\System32\vcomp140.dll
 
-echo:
 echo Done setting up all dependencies.
 
 :end
+exit /b 0
+
+:error
+exit /b 1

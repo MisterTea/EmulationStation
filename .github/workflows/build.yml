@@ -1,0 +1,205 @@
+name: Build ES-DE
+
+on:
+  push:
+    branches: [ esde, main, master ]
+  pull_request:
+    branches: [ esde, main, master ]
+  workflow_dispatch:
+
+jobs:
+  debian-arm64:
+    name: Debian ARM64 (Raspberry Pi)
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: debian:bookworm
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential git cmake gettext pkg-config file ca-certificates \
+            libharfbuzz-dev libicu-dev libsdl2-dev \
+            libavcodec-dev libavfilter-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
+            libfreeimage-dev libfreetype6-dev libgit2-dev libcurl4-openssl-dev libpugixml-dev \
+            libasound2-dev libbluetooth-dev libgl1-mesa-dev libgles2-mesa-dev libpoppler-cpp-dev libsqlite3-dev
+          git config --global --add safe.directory '*'
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Verify binary
+        run: |
+          file ./build/es-de || file ./build/es-app/es-de || file ./es-de
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ES-DE-debian-arm64
+          path: |
+            build/es-de
+            build/es-app/es-de
+            es-de
+          if-no-files-found: warn
+
+  linux-x64:
+    name: Linux x64
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential git cmake gettext pkg-config file \
+            libharfbuzz-dev libicu-dev libsdl2-dev \
+            libavcodec-dev libavfilter-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
+            libfreeimage-dev libfreetype6-dev libgit2-dev libcurl4-openssl-dev libpugixml-dev \
+            libasound2-dev libbluetooth-dev libgl1-mesa-dev libpoppler-cpp-dev libsqlite3-dev
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Verify binary
+        run: |
+          file ./build/es-de || file ./build/es-app/es-de || file ./es-de
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ES-DE-linux-x64
+          path: |
+            build/es-de
+            build/es-app/es-de
+            es-de
+          if-no-files-found: warn
+
+  macos-arm64:
+    name: macOS (Apple Silicon)
+    runs-on: macos-14
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install cmake pkg-config gettext sdl2 ffmpeg freeimage freetype libgit2 harfbuzz icu4c pugixml sqlite poppler
+
+      - name: Configure CMake
+        run: |
+          ICU_DIR="$(brew --prefix icu4c)"
+          SQLITE_DIR="$(brew --prefix sqlite)"
+          GETTEXT_DIR="$(brew --prefix gettext)"
+          BREW_DIR="$(brew --prefix)"
+          export PATH="${GETTEXT_DIR}/bin:$PATH"
+          export PKG_CONFIG_PATH="${SQLITE_DIR}/lib/pkgconfig:${ICU_DIR}/lib/pkgconfig:${BREW_DIR}/lib/pkgconfig:$PKG_CONFIG_PATH"
+          cmake -B build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="${BREW_DIR};${SQLITE_DIR};${GETTEXT_DIR};${ICU_DIR}"
+
+      - name: Build
+        run: cmake --build build -j$(sysctl -n hw.ncpu)
+
+      - name: Verify binary
+        run: |
+          file ./ES-DE || file ./build/ES-DE || file ./build/es-app/ES-DE
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ES-DE-macos-arm64
+          path: |
+            ES-DE
+            build/ES-DE
+            build/es-app/ES-DE
+          if-no-files-found: warn
+
+  windows-x64:
+    name: Windows x64
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up MSVC developer environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Jom and OpenSSL
+        shell: cmd
+        run: |
+          choco install -y jom openssl.light
+
+      - name: Add 7-Zip to PATH
+        shell: bash
+        run: echo "C:/Program Files/7-Zip" >> $GITHUB_PATH
+
+      - name: Cache Windows dependencies
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            external/gettext
+            external/icu
+            external/curl
+            external/glew
+            external/harfbuzz
+            external/freetype
+            external/FreeImage
+            external/libgit2
+            external/poppler
+            external/pugixml
+            external/SDL2
+            external/ffmpeg
+            *.lib
+            *.dll
+            es-pdf-converter/*.dll
+          key: windows-deps-${{ hashFiles('tools/Windows_dependencies*') }}
+
+      - name: Setup dependencies (if not cached)
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        shell: cmd
+        run: |
+          call tools\Windows_dependencies_setup.bat
+          call tools\Windows_dependencies_build.bat
+
+      - name: Configure CMake
+        shell: cmd
+        run: |
+          cmake -G "NMake Makefiles JOM" -DCMAKE_BUILD_TYPE=Release .
+
+      - name: Build
+        shell: cmd
+        run: |
+          jom -j%NUMBER_OF_PROCESSORS%
+
+      - name: Verify binary
+        shell: cmd
+        run: |
+          dir ES-DE.exe
+          dumpbin /headers ES-DE.exe | findstr /i "machine"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ES-DE-windows-x64
+          path: |
+            ES-DE.exe
+            *.dll
+          if-no-files-found: warn

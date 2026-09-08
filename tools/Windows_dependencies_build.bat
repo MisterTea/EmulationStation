@@ -43,7 +43,7 @@ if not exist %ICU_DATA_FILTER_FILE% (
   goto end
 )
 
-msbuild source\allinone\allinone.sln /p:Configuration=Release /p:Platform=x64 /p:SkipUWP=true
+msbuild source\allinone\allinone.sln /p:Configuration=Release /p:Platform=x64 /p:SkipUWP=true /m
 
 copy /Y bin64\icudt78.dll ..\..\..\
 copy /Y bin64\icuin78.dll ..\..\..\
@@ -144,3 +144,7 @@ echo:
 echo Done building all dependencies.
 
 :end
+exit /b 0
+
+:error
+exit /b 1
