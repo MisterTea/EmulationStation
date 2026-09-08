@@ -11,6 +11,7 @@
 #include "Log.h"
 #include "Settings.h"
 
+#include <algorithm>
 #include <pugixml.hpp>
 
 InputConfig::InputConfig(int deviceId, const std::string& deviceName, const std::string& deviceGUID)
