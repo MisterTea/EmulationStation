@@ -90,7 +90,13 @@ public:
 
         return stream.str();
     }
+
+    std::string mameString(int deviceIndex, bool analog) const;
 };
+
+bool mamePortIsAnalog(const std::string& mamePort);
+std::vector<std::string> inputNameToMameStrings(const std::string& inputName, const std::string& machine, int player);
+std::string reverseInputName(const std::string& inputName);
 
 class InputConfig
 {
@@ -127,11 +133,17 @@ public:
     const std::string& getDeviceName() { return mDeviceName; }
     const std::string& getDeviceGUIDString() { return mDeviceGUID; }
 
+    std::string getMameNameForCategory(const std::string& inputName, const std::string& mamePort, const std::string& sequence, int deviceIndex);
+
 private:
     std::map<std::string, Input> mNameMap;
     const int mDeviceId;
     const std::string mDeviceName;
     const std::string mDeviceGUID;
 };
+
+bool mamePortIsAnalog(const std::string& mamePort);
+std::string reverseInputName(const std::string& inputName);
+std::vector<std::string> inputNameToMameStrings(const std::string& inputName, const std::string& machine, int player);
 
 #endif // ES_CORE_INPUT_CONFIG_H

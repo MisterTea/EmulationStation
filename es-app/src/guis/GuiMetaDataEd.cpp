@@ -668,9 +668,11 @@ GuiMetaDataEd::GuiMetaDataEd(MetaDataList* md,
                     // If the user has entered a blank game name, then set the name to the ROM
                     // filename (minus the extension).
                     if (currentKey == "name" && newVal == "") {
-                        if (scraperParams.game->isArcadeGame()) {
-                            ed->setValue(MameNames::getInstance().getCleanName(
-                                scraperParams.game->getCleanName()));
+                        std::string defaultCleanName = MameNames::getInstance().getCleanName(
+                            scraperParams.game->getSystem()->getName(),
+                            scraperParams.game->getCleanName());
+                        if (defaultCleanName != scraperParams.game->getCleanName()) {
+                            ed->setValue(defaultCleanName);
                         }
                         else {
                             // For the special case where a directory has a supported file extension

@@ -595,6 +595,16 @@ void GuiScraperSearch::onSearchError(const std::string& error,
                                      const bool fatalError,
                                      HttpReq::Status status)
 {
+    // If daily quota was exceeded and we are running in automatic mode, cancel cleanly
+    if (mSearchType == AUTOMATIC_MODE &&
+        (error.find("quota") != std::string::npos || error.find("quota de scrape") != std::string::npos)) {
+        LOG(LogError) << "GuiScraperSearch: Quota exceeded in automatic mode. Aborting automated scraping: "
+                      << Utils::String::replace(error, "\n", "");
+        if (mCancelCallback)
+            mCancelCallback();
+        return;
+    }
+
     if (fatalError) {
         LOG(LogWarning) << "GuiScraperSearch: " << Utils::String::replace(error, "\n", "");
         mWindow->pushGui(new GuiMsgBox(Utils::String::toUpper(error), _("OK"), mCancelCallback, "",
@@ -1075,22 +1085,13 @@ void GuiScraperSearch::openInputScreen(ScraperSearchParams& params)
         }
         else {
             // If searching based on the actual file name, then expand to the full game name
-            // in case the scraper is set to TheGamesDB and it's an arcade game. This is
-            // required as TheGamesDB does not support searches using the short MAME names.
-            if (params.game->isArcadeGame() &&
-                Settings::getInstance()->getString("Scraper") == "thegamesdb") {
-                searchString = MameNames::getInstance().getCleanName(params.game->getCleanName());
-            }
-            else {
-                if (params.game->getType() == GAME &&
-                    Utils::FileSystem::isDirectory(params.game->getFullPath())) {
-                    // For the special case where a directory has a supported file extension and is
-                    // therefore interpreted as a file, exclude the extension from the search.
-                    searchString = Utils::FileSystem::getStem(params.game->getCleanName());
-                }
-                else {
-                    searchString = params.game->getCleanName();
-                }
+            // Expand short MAME/software list names to the full game name.
+            searchString = MameNames::getInstance().getCleanName(
+                params.game->getSystem()->getName(), params.game->getCleanName());
+            if (searchString == params.game->getCleanName() &&
+                params.game->getType() == GAME &&
+                Utils::FileSystem::isDirectory(params.game->getFullPath())) {
+                searchString = Utils::FileSystem::getStem(params.game->getCleanName());
             }
         }
     }
@@ -1121,11 +1122,10 @@ bool GuiScraperSearch::saveMetadata(const ScraperSearchResult& result,
     std::vector<MetaDataDecl> mMetaDataDecl {metadata.getMDD()};
     std::string defaultName;
 
-    // Get the default name, which is either the MAME name or the name of the physical file
-    // or directory.
-    if (scrapedGame->isArcadeGame())
-        defaultName = MameNames::getInstance().getCleanName(scrapedGame->getCleanName());
-    else
+    // Get the default name, which is the expanded MAME/software list name or physical filename.
+    defaultName = MameNames::getInstance().getCleanName(
+        scrapedGame->getSystem()->getName(), scrapedGame->getCleanName());
+    if (defaultName == scrapedGame->getCleanName())
         defaultName = Utils::FileSystem::getStem(scrapedGame->getFileName());
 
     // We want the comparison to be case sensitive.

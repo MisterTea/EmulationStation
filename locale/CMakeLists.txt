@@ -10,7 +10,7 @@ add_custom_target(localization ALL COMMENT Compiling localization message catalo
 
 if(IOS)
     set(MSGFMT_BINARY ${PROJECT_SOURCE_DIR}/external/macos/local_install/bin/msgfmt)
-elseif(APPLE)
+elseif(APPLE AND NOT USE_SYSTEM_LIBS)
     set(MSGFMT_BINARY ${PROJECT_SOURCE_DIR}/external/local_install/bin/msgfmt)
 elseif(WIN32)
     set(MSGFMT_BINARY ${PROJECT_SOURCE_DIR}/external/gettext/bin/msgfmt.exe)

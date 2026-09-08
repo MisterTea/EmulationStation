@@ -10,6 +10,7 @@
 
 #include "InputManager.h"
 
+#include "InputConfig.h"
 #include "Log.h"
 #include "Scripting.h"
 #include "Window.h"
@@ -19,7 +20,10 @@
 #include "utils/PlatformUtil.h"
 #include "utils/StringUtil.h"
 
+#include <algorithm>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <pugixml.hpp>
 
 #define KEYBOARD_GUID_STRING "-1"
@@ -119,6 +123,8 @@ void InputManager::init()
         if (SDL_IsGameController(i))
             addControllerByDeviceIndex(nullptr, i);
     }
+
+    createMameXML();
 }
 
 void InputManager::deinit()
@@ -198,6 +204,7 @@ void InputManager::writeDeviceConfig(InputConfig* config)
 
     mConfigFileExists = true;
     loadInputConfig(config);
+    createMameXML();
 }
 
 std::string InputManager::getConfigPath()
@@ -730,6 +737,8 @@ void InputManager::addControllerByDeviceIndex(Window* window, int deviceIndex)
 
     for (int button {0}; button < numButtons; ++button)
         mPrevButtonValues[std::make_pair(joyID, button)] = -1;
+
+    createMameXML();
 }
 
 void InputManager::removeControllerByJoystickID(Window* window, SDL_JoystickID joyID)
@@ -809,5 +818,144 @@ void InputManager::removeControllerByJoystickID(Window* window, SDL_JoystickID j
     }
     else {
         LOG(LogError) << "Couldn't find joystick entry to remove (instance ID: " << joyID << ")";
+    }
+
+    createMameXML();
+}
+
+void InputManager::createMameXML()
+{
+    // Collect and sort configured controllers
+    std::vector<std::pair<std::string, InputConfig*>> sortedConfigs;
+    for (auto& it : mInputConfigs) {
+        if (it.second && it.second->isConfigured()) {
+            std::string guidWithIndex = it.second->getDeviceGUIDString() + "_" + std::to_string(it.second->getDeviceId());
+            sortedConfigs.emplace_back(guidWithIndex, it.second.get());
+        }
+    }
+    std::sort(sortedConfigs.begin(), sortedConfigs.end(),
+              [](const auto& a, const auto& b) { return a.first < b.first; });
+
+    std::stringstream ss;
+    ss << "<?xml version=\"1.0\"?>\n";
+    ss << "<mameconfig version=\"10\">\n";
+
+    std::vector<std::string> inputMachineTypes = {"default", "snes", "gba", "psx", "Street Fighter", "Mortal Kombat"};
+    std::map<std::string, std::vector<std::string>> machineMappingMap;
+    machineMappingMap["default"] = {"default"};
+    machineMappingMap["snes"] = {"snes"};
+    machineMappingMap["gba"] = {"gba"};
+    machineMappingMap["psx"] = {"psx"};
+    machineMappingMap["Street Fighter"] = {
+        "sf2", "sf2eb", "sf2ed", "sf2ee", "sf2ua", "sf2ub", "sf2uc", "sf2ud", "sf2ue", "sf2uf",
+        "sf2ug", "sf2ui", "sf2uk", "sf2j", "sf2ja", "sf2jc", "sf2jf", "sf2jh", "sf2jl", "sf2ebbl",
+        "sf2ebbl2", "sf2ebbl3", "sf2stt", "sf2rk", "sf2qp1", "sf2thndr",
+        "sf2ce", "sf2ceea", "sf2ceua", "sf2ceub", "sf2ceuc", "sf2ceja", "sf2cejb", "sf2cejc",
+        "sf2bhh", "sf2rb", "sf2rb2", "sf2rb3", "sf2red", "sf2v004", "sf2acc", "sf2acca",
+        "sf2accp2", "sf2amf", "sf2amf2", "sf2dkot2", "sf2ceblp", "sf2m2", "sf2m3", "sf2m4",
+        "sf2m5", "sf2m6", "sf2m7", "sf2m8", "sf2yyc", "sf2koryu", "sf2dongb", "sf2hf",
+        "sf2hfu", "sf2hfj", "sfzch", "sfach", "sfzbch", "ssf2tad", "ssf2xjd", "sfz2ad",
+        "sfz2jd", "sfa3ud", "sfz3jr2d", "hsf2d", "sfiii", "sfiiiu", "sfiiia", "sfiiij",
+        "sfiiih", "sfiiin", "sfiiina", "sfiii2", "sfiii2j", "sfiii2n", "sfiii3", "sfiii3u",
+        "sfiii3n", "sfiii3r1", "sfiii3ur1", "sfiii3nr1", "cps3bs32", "cps3bs32a", "ssf2mdb"
+    };
+    machineMappingMap["Mortal Kombat"] = {
+        "mk", "mk2", "mkr4", "mktturbo", "mk2r32e", "mk2r31e", "mk2r30", "mk2r21", "mk2r20",
+        "mk2r14", "mk2r11", "mk2r42", "mk2r91", "mk2cha1", "mk3", "mk3r20", "mk3r10",
+        "mk3p40", "umk3", "umk3r11", "umk3r10", "mk3mdb"
+    };
+
+    const std::vector<std::string> inputNames = {
+        "up", "down", "left", "right",
+        "leftthumbstickup", "leftthumbstickdown", "leftthumbstickleft", "leftthumbstickright",
+        "rightthumbstickup", "rightthumbstickdown", "rightthumbstickleft", "rightthumbstickright",
+        "y", "b", "a", "x",
+        "leftshoulder", "rightshoulder", "lefttrigger", "righttrigger",
+        "leftthumbstickclick", "rightthumbstickclick",
+        "start", "back"
+    };
+
+    int numPlayers = std::max(1, static_cast<int>(sortedConfigs.size()));
+
+    for (const auto& inputMachineType : inputMachineTypes) {
+        const auto& machines = machineMappingMap[inputMachineType];
+        for (const auto& machine : machines) {
+            ss << "<system name=\"" << machine << "\">\n<input>\n";
+            for (int player = 0; player < numPlayers; ++player) {
+                InputConfig* playerController = (player < static_cast<int>(sortedConfigs.size())) ?
+                    sortedConfigs[player].second : nullptr;
+
+                for (const auto& inputName : inputNames) {
+                    std::vector<std::string> portNames = inputNameToMameStrings(inputName, inputMachineType, player);
+                    for (const auto& portName : portNames) {
+                        bool startedPort = false;
+                        std::vector<std::string> sequences = {"standard"};
+                        bool analog = mamePortIsAnalog(portName);
+                        if (analog) {
+                            sequences = {"standard", "increment", "decrement"};
+                        }
+                        for (const auto& sequence : sequences) {
+                            std::string inputForSeq = inputName;
+                            if (sequence != "standard") {
+                                if (reverseInputName(inputName).empty())
+                                    continue;
+                            }
+                            if (sequence == "decrement") {
+                                inputForSeq = reverseInputName(inputName);
+                            }
+
+                            std::string totalInput;
+                            if (player == 0 && mKeyboardInputConfig && mKeyboardInputConfig->isConfigured()) {
+                                totalInput = mKeyboardInputConfig->getMameNameForCategory(inputForSeq, portName, sequence, 0);
+                            }
+                            if (playerController) {
+                                std::string ctrlInput = playerController->getMameNameForCategory(inputForSeq, portName, sequence, player);
+                                if (!ctrlInput.empty()) {
+                                    if (!totalInput.empty())
+                                        totalInput += " OR ";
+                                    totalInput += ctrlInput;
+                                }
+                            }
+
+                            if (!totalInput.empty()) {
+                                if (!startedPort) {
+                                    ss << "<port type=\"" << portName << "\">\n";
+                                    startedPort = true;
+                                }
+                                ss << "<newseq type=\"" << sequence << "\">\n";
+                                ss << totalInput << "\n";
+                                ss << "</newseq>\n";
+                            }
+                        }
+                        if (startedPort) {
+                            ss << "</port>\n";
+                        }
+                    }
+                }
+            }
+            ss << "</input>\n</system>\n";
+        }
+    }
+    ss << "</mameconfig>\n";
+
+    std::string xmlContent = ss.str();
+
+    std::vector<std::string> targetDirs = {
+        Utils::FileSystem::getHomePath() + "/.mame/ctrlr",
+        Utils::FileSystem::getAppDataDirectory() + "/mame/ctrlr",
+        "mame/ctrlr",
+        "ctrlr"
+    };
+
+    for (const auto& dir : targetDirs) {
+        if (Utils::FileSystem::createDirectory(dir)) {
+            std::string filePath = dir + "/esmame.cfg";
+            std::ofstream ofs(filePath);
+            if (ofs.is_open()) {
+                ofs << xmlContent;
+                ofs.close();
+                LOG(LogInfo) << "Wrote MAME controller configuration to " << filePath;
+            }
+        }
     }
 }

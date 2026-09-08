@@ -33,7 +33,8 @@ public:
     FileData(FileType type,
              const std::string& path,
              SystemEnvironmentData* envData,
-             SystemData* system);
+             SystemData* system,
+             const std::string& displayName = "");
 
     virtual ~FileData();
 
@@ -131,8 +132,8 @@ public:
     };
 
     void launchGame();
-    const std::pair<std::string, FileData::findEmulatorResult> findEmulator(std::string& command,
-                                                                            const bool preCommand);
+    static const std::pair<std::string, FileData::findEmulatorResult> findEmulator(
+        std::string& command, const bool preCommand);
 
     using ComparisonFunction = bool(const FileData* a, const FileData* b);
     struct SortType {

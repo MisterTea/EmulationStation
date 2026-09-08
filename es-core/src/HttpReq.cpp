@@ -230,8 +230,9 @@ HttpReq::HttpReq(const std::string& url, bool scraperRequest)
         }
     }
 
-    // Fail on HTTP status codes >= 400.
-    err = curl_easy_setopt(mHandle, CURLOPT_FAILONERROR, 1L);
+    // Do not fail immediately on HTTP status codes >= 400 with CURLE_HTTP_RETURNED_ERROR / CURLE_RECV_ERROR,
+    // so we can read the response code and content cleanly in pollCurl.
+    err = curl_easy_setopt(mHandle, CURLOPT_FAILONERROR, 0L);
     if (err != CURLE_OK) {
         mStatus = REQ_IO_ERROR;
         onError(curl_easy_strerror(err));
@@ -392,7 +393,32 @@ void HttpReq::pollCurl()
                     }
 
                     if (msg->data.result == CURLE_OK) {
-                        req->mStatus = REQ_SUCCESS;
+                        long responseCode {0};
+                        curl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &responseCode);
+
+                        if (responseCode == 429 &&
+                            Settings::getInstance()->getString("Scraper") != "screenscraper") {
+                            req->mContent << _("You have exceeded your daily scrape quota");
+                            req->mStatus = REQ_QUOTA_REACHED;
+                        }
+                        else if (responseCode == 430 &&
+                                 Settings::getInstance()->getString("Scraper") == "screenscraper") {
+                            req->mContent << _("You have exceeded your daily scrape quota");
+                            req->mStatus = REQ_SUCCESS;
+                        }
+                        else if (responseCode == 404 && req->mScraperRequest &&
+                                 Settings::getInstance()->getBool("ScraperIgnoreHTTP404Errors")) {
+                            req->mStatus = REQ_RESOURCE_NOT_FOUND;
+                        }
+                        else if (responseCode >= 400) {
+                            req->mStatus = REQ_BAD_STATUS_CODE;
+                            req->onError(
+                                Utils::String::format(_("Server returned HTTP error code %s"),
+                                                      std::to_string(responseCode).c_str()));
+                        }
+                        else {
+                            req->mStatus = REQ_SUCCESS;
+                        }
                     }
                     else if (msg->data.result == CURLE_PEER_FAILED_VERIFICATION) {
                         req->mStatus = REQ_FAILED_VERIFICATION;

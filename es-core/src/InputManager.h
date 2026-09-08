@@ -47,6 +47,8 @@ public:
 
     int getNumJoysticks() { return static_cast<int>(mJoysticks.size()); }
 
+    void createMameXML();
+
 private:
     InputManager() noexcept;
     virtual ~InputManager();

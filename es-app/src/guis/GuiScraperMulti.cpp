@@ -25,13 +25,17 @@
 #include "guis/GuiScraperSearch.h"
 #include "utils/LocalizationUtil.h"
 
+#include <SDL2/SDL_events.h>
+
 GuiScraperMulti::GuiScraperMulti(
     const std::pair<std::queue<ScraperSearchParams>, std::map<SystemData*, int>>& searches,
-    bool approveResults)
+    bool approveResults,
+    bool autoClose)
     : mRenderer {Renderer::getInstance()}
     , mGrid {glm::ivec2 {2, 6}}
     , mSearchQueue {searches.first}
     , mApproveResults {approveResults}
+    , mAutoClose {autoClose}
 {
     assert(mSearchQueue.size());
 
@@ -254,12 +258,13 @@ void GuiScraperMulti::doNextSearch()
         scrapeName = mSearchQueue.front().game->getName();
     }
     else {
-        if (mSearchQueue.front().game->isArcadeGame() &&
-            Settings::getInstance()->getString("Scraper") == "thegamesdb")
+        std::string expandedName = MameNames::getInstance().getCleanName(
+            mSearchQueue.front().game->getSystem()->getName(),
+            mSearchQueue.front().game->getCleanName());
+        if (expandedName != mSearchQueue.front().game->getCleanName())
             scrapeName =
                 Utils::FileSystem::getFileName(mSearchQueue.front().game->getPath()) + " (" +
-                MameNames::getInstance().getCleanName(mSearchQueue.front().game->getCleanName()) +
-                ")";
+                expandedName + ")";
         else
             scrapeName = Utils::FileSystem::getFileName(mSearchQueue.front().game->getPath());
     }
@@ -342,6 +347,17 @@ void GuiScraperMulti::finish()
             ss << "\n"
                << Utils::String::format(_n("%i GAME SKIPPED", "%i GAMES SKIPPED", mTotalSkipped),
                                         mTotalSkipped);
+    }
+
+    if (mAutoClose) {
+        LOG(LogInfo) << "Automated scraping batch completed: " << mTotalSuccessful
+                     << " scraped, " << mTotalSkipped << " skipped.";
+        mIsProcessing = false;
+        SDL_Event quit {};
+        quit.type = SDL_QUIT;
+        SDL_PushEvent(&quit);
+        delete this;
+        return;
     }
 
     // Pressing either OK or using the back button should delete us.

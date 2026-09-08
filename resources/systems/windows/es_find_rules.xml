@@ -653,8 +653,11 @@
         <!-- Arcade emulator MAME -->
         <rule type="systempath">
             <entry>mame.exe</entry>
+            <entry>mame64.exe</entry>
         </rule>
         <rule type="staticpath">
+            <entry>mame\mame.exe</entry>
+            <entry>mame\mame64.exe</entry>
             <entry>%ESPATH%\Emulators\mame\mame.exe</entry>
             <entry>%ESPATH%\..\Emulators\mame\mame.exe</entry>
         </rule>

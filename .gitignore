@@ -60,6 +60,7 @@ es-de.core
 # Profiling data
 callgrind.out.*
 gmon.out
+myeasylog.log
 
 # Patch/diff files
 *.patch

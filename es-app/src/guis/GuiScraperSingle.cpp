@@ -35,15 +35,13 @@ GuiScraperSingle::GuiScraperSingle(ScraperSearchParams& params,
     if (Settings::getInstance()->getBool("ScraperSearchMetadataName")) {
         scrapeName = mSearchParams.game->getName();
     }
-    else {
-        if (params.game->isArcadeGame() &&
-            Settings::getInstance()->getString("Scraper") == "thegamesdb")
+        std::string expandedName = MameNames::getInstance().getCleanName(
+            mSearchParams.game->getSystem()->getName(), mSearchParams.game->getCleanName());
+        if (expandedName != mSearchParams.game->getCleanName())
             scrapeName = Utils::FileSystem::getFileName(mSearchParams.game->getPath()) + " (" +
-                         MameNames::getInstance().getCleanName(mSearchParams.game->getCleanName()) +
-                         ")";
+                         expandedName + ")";
         else
             scrapeName = Utils::FileSystem::getFileName(mSearchParams.game->getPath());
-    }
 
     mGameName = std::make_shared<TextComponent>(
         scrapeName +

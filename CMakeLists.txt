@@ -115,10 +115,24 @@ endif()
 
 # On macOS, iOS and Windows all dependencies are kept in-tree in the "external" directory.
 if(APPLE AND NOT IOS)
-    if(NOT EXISTS ${PROJECT_SOURCE_DIR}/external/FFmpeg)
-        message(FATAL_ERROR "-- You need to build the dependencies in ./external first")
+    if(EXISTS ${PROJECT_SOURCE_DIR}/external/FFmpeg)
+        set(USE_EXTERNAL_DEPS ON)
+        find_package(CURL REQUIRED)
+        find_package(SQLite3 REQUIRED)
+    else()
+        set(USE_SYSTEM_LIBS ON)
+        find_package(CURL REQUIRED)
+        find_package(FFmpeg REQUIRED)
+        find_package(FreeImage REQUIRED)
+        find_package(Freetype REQUIRED)
+        find_package(HarfBuzz REQUIRED)
+        find_package(ICU REQUIRED)
+        find_package(Intl REQUIRED)
+        find_package(Libgit2 REQUIRED)
+        find_package(Pugixml REQUIRED)
+        find_package(SDL2 REQUIRED)
+        find_package(SQLite3 REQUIRED)
     endif()
-    find_package(CURL REQUIRED)
 elseif(WIN32)
     if(NOT EXISTS ${PROJECT_SOURCE_DIR}/external/pugixml/pugixml.dll)
         message(FATAL_ERROR "-- You need to build the dependencies in ./external first")
@@ -134,6 +148,7 @@ elseif(NOT EMSCRIPTEN AND NOT ANDROID AND NOT IOS)
     find_package(Libgit2 REQUIRED)
     find_package(Pugixml REQUIRED)
     find_package(SDL2 REQUIRED)
+    find_package(SQLite3 REQUIRED)
 endif()
 
 # Add ALSA and BlueZ for Linux.
@@ -428,6 +443,8 @@ endif()
 # Include files.
 
 set(COMMON_INCLUDE_DIRS ${CURL_INCLUDE_DIR}
+                        ${SQLite3_INCLUDE_DIRS}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/external/sqlite3
                         ${CMAKE_CURRENT_SOURCE_DIR}/external/CImg
                         ${CMAKE_CURRENT_SOURCE_DIR}/external/glm
                         ${CMAKE_CURRENT_SOURCE_DIR}/external/lunasvg/include
@@ -448,7 +465,7 @@ if(IOS)
                             ${CMAKE_CURRENT_SOURCE_DIR}/external/icu/icu4c/source/common
                             ${CMAKE_CURRENT_SOURCE_DIR}/external/pugixml/src
                             ${CMAKE_CURRENT_SOURCE_DIR}/external/SDL)
-elseif(APPLE)
+elseif(APPLE AND NOT USE_SYSTEM_LIBS)
     set(COMMON_INCLUDE_DIRS ${COMMON_INCLUDE_DIRS}
                             ${CMAKE_CURRENT_SOURCE_DIR}/external/FFmpeg
                             ${CMAKE_CURRENT_SOURCE_DIR}/external/freeimage/FreeImage/Source
@@ -535,9 +552,10 @@ if(IOS)
                          ${PROJECT_SOURCE_DIR}/Frameworks/libpoppler-cpp.xcframework
                          ${PROJECT_SOURCE_DIR}/Frameworks/libSDL.xcframework
                          ${PROJECT_SOURCE_DIR}/libpugixml.a)
-elseif(APPLE)
+elseif(APPLE AND NOT USE_SYSTEM_LIBS)
     set(COMMON_LIBRARIES ${COMMON_LIBRARIES}
                          ${CURL_LIBRARIES}
+                         ${SQLite3_LIBRARIES}
                          ${PROJECT_SOURCE_DIR}/libavcodec.62.dylib
                          ${PROJECT_SOURCE_DIR}/libavfilter.11.dylib
                          ${PROJECT_SOURCE_DIR}/libavformat.62.dylib
@@ -643,7 +661,8 @@ else()
                          ${HarfBuzz_LIBRARIES}
                          ${ICU_LIBRARIES}
                          ${PUGIXML_LIBRARIES}
-                         ${SDL2_LIBRARY})
+                         ${SDL2_LIBRARY}
+                         ${SQLite3_LIBRARIES})
     if(Intl_LIBRARY)
         # On Unix systems where the gettext functions are not part of the C standard library
         # we need to explicitly link with the libintl library.

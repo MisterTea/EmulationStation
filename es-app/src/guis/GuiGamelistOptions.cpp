@@ -449,10 +449,10 @@ void GuiGamelistOptions::openMetaDataEd()
         const std::vector<MetaDataDecl>& mdd {file->metadata.getMDD()};
         for (auto it = mdd.cbegin(); it != mdd.cend(); ++it) {
             if (it->key == "name") {
-                if (file->isArcadeGame()) {
-                    // If it's a MAME or Neo Geo game, expand the game name accordingly.
-                    file->metadata.set(it->key,
-                                       MameNames::getInstance().getCleanName(file->getCleanName()));
+                std::string expandedName = MameNames::getInstance().getCleanName(
+                    file->getSystem()->getName(), file->getCleanName());
+                if (expandedName != file->getCleanName()) {
+                    file->metadata.set(it->key, expandedName);
                 }
                 else {
                     file->metadata.set(it->key, file->getDisplayName());

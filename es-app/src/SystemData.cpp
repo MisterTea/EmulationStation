@@ -33,6 +33,10 @@
 #include <fstream>
 #include <pugixml.hpp>
 #include <random>
+#include <unordered_set>
+
+#include "FileData.h"
+#include "MameNames.h"
 
 FindRules::FindRules()
 {
@@ -47,7 +51,15 @@ void FindRules::loadFindRules()
                           "/custom_systems/es_find_rules.xml"};
     if (Utils::FileSystem::exists(filePath)) {
         paths.emplace_back(filePath);
-        LOG(LogInfo) << "Found custom find rules configuration file";
+        LOG(LogInfo) << "Found custom find rules configuration file in " << filePath;
+    }
+
+    std::string legacyPath {Utils::FileSystem::getHomePath() +
+                            "/.emulationstation/custom_systems/es_find_rules.xml"};
+    if (Utils::FileSystem::exists(legacyPath) &&
+        std::find(paths.begin(), paths.end(), legacyPath) == paths.end()) {
+        paths.emplace_back(legacyPath);
+        LOG(LogInfo) << "Found custom find rules configuration file in " << legacyPath;
     }
 
 #if defined(__ANDROID__)
@@ -622,8 +634,8 @@ bool SystemData::populateFolder(FileData* folder)
     const Utils::FileSystem::StringList& dirContent {Utils::FileSystem::getDirContent(folderPath)};
     bool isGame {false};
 
-    // If system directory exists but contains no games, return as error.
-    if (dirContent.size() == 0)
+    // If system directory exists but contains no games, return as error unless candy is enabled.
+    if (dirContent.size() == 0 && !sMameHasCandy)
         return false;
 
     if (std::find(dirContent.cbegin(), dirContent.cend(), mEnvData->mStartPath + "/noload.txt") !=
@@ -771,7 +783,60 @@ bool SystemData::populateFolder(FileData* folder)
             }
         }
     }
-    return true;
+
+    if (sMameHasCandy && folder == mRootFolder) {
+        populateCandyGames(folder);
+    }
+
+    return (folder->getChildren().size() > 0);
+}
+
+void SystemData::populateCandyGames(FileData* folder)
+{
+    std::unordered_set<std::string> existingStems;
+    const auto& children = folder->getChildren();
+    for (FileData* child : children) {
+        if (child->getType() == GAME) {
+            existingStems.insert(Utils::FileSystem::getStem(child->getPath()));
+        }
+    }
+
+    std::vector<std::string> platforms;
+    for (PlatformIds::PlatformId id : mEnvData->mPlatformIds) {
+        std::string pName = PlatformIds::getPlatformName(id);
+        if (!pName.empty())
+            platforms.push_back(pName);
+    }
+    if (std::find(platforms.begin(), platforms.end(), mName) == platforms.end()) {
+        platforms.push_back(mName);
+    }
+
+    std::unordered_set<std::string> addedShortnames;
+
+    for (const auto& plat : platforms) {
+        std::vector<std::pair<std::string, std::string>> games =
+            MameNames::getInstance().getGamesForPlatform(plat);
+
+        for (const auto& gamePair : games) {
+            const std::string& shortname = gamePair.first;
+            const std::string& longname = gamePair.second;
+
+            if (existingStems.find(shortname) != existingStems.end())
+                continue;
+            if (!addedShortnames.insert(shortname).second)
+                continue;
+
+            std::string gamePath = folder->getPath() + "/" + shortname + ".zip";
+            FileData* newGame = new FileData(GAME, gamePath, mEnvData, this, longname);
+
+            if (!newGame->isArcadeAsset()) {
+                folder->addChild(newGame);
+            }
+            else {
+                delete newGame;
+            }
+        }
+    }
 }
 
 void SystemData::indexAllGameFilters(const FileData* folder)
@@ -809,6 +874,91 @@ std::vector<std::string> readList(const std::string& str, const std::string& del
     return ret;
 }
 
+bool SystemData::checkMameHasCandy()
+{
+    std::string mameCmd = "%EMULATOR_MAME%";
+    std::pair<std::string, FileData::findEmulatorResult> res = FileData::findEmulator(mameCmd, false);
+    std::string mameBinary = (res.second == FileData::findEmulatorResult::FOUND_FILE) ? res.first : "";
+
+    if (mameBinary.empty()) {
+        std::vector<std::string> candidates = {
+            "/Users/jjg/mame/mamehub",
+            "/opt/homebrew/bin/mame",
+            "/usr/local/bin/mame",
+            "mame"
+        };
+        for (const auto& c : candidates) {
+            if (Utils::FileSystem::isRegularFile(c) || Utils::FileSystem::isSymlink(c)) {
+                mameBinary = c;
+                break;
+            }
+        }
+    }
+
+    if (mameBinary.empty()) {
+        LOG(LogInfo) << "SystemData::checkMameHasCandy(): MAME binary not found";
+        return false;
+    }
+
+    LOG(LogInfo) << "Checking for 'candy' option in MAME binary: " << mameBinary;
+
+    std::string cmd = Utils::FileSystem::getEscapedPath(mameBinary) + " -showconfig 2>/dev/null";
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe)
+        return false;
+
+    char buffer[1024];
+    bool hasCandy = false;
+    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+        std::string line(buffer);
+        if (line.find("candy") != std::string::npos) {
+            hasCandy = true;
+            break;
+        }
+    }
+    pclose(pipe);
+
+    if (hasCandy) {
+        LOG(LogInfo) << "SystemData::checkMameHasCandy(): MAME supports 'candy'! Assuming every game exists on-device.";
+    }
+    else {
+        LOG(LogInfo) << "SystemData::checkMameHasCandy(): MAME does not support 'candy'.";
+    }
+
+    return hasCandy;
+}
+
+static bool isSystemExcluded(const std::string& name, const std::string& platform = "")
+{
+    // Allowed systems: "arcade" + top 10 most popular systems from MAMEHub popularity list
+    // (excluding dreamcast which has no MAME software list in SQLite):
+    // 1. snes (score 100)
+    // 2. nes (score 98)
+    // 3. genesis (score 96)
+    // 4. psx / psu (score 94)
+    // 5. n64 (score 92)
+    // 6. gba (score 90)
+    // 7. gb / gameboy (score 88)
+    // 8. saturn (score 82)
+    // 9. c64 (score 80)
+    // 10. pcengine / pce (score 76)
+    static const std::unordered_set<std::string> allowedSystems {
+        "arcade",
+        "snes",
+        "nes",
+        "genesis",
+        "psx",
+        "n64",
+        "gba",
+        "gb",
+        "saturn",
+        "c64",
+        "pcengine"
+    };
+
+    return allowedSystems.find(name) == allowedSystems.end();
+}
+
 bool SystemData::loadConfig()
 {
     deleteSystems();
@@ -818,6 +968,8 @@ bool SystemData::loadConfig()
 
     if (sImportRules.get() == nullptr)
         sImportRules = std::make_unique<ImportRules>();
+
+    sMameHasCandy = checkMameHasCandy();
 
     LOG(LogInfo) << "Populating game systems...";
 
@@ -975,6 +1127,12 @@ bool SystemData::loadConfig()
             if (nameFindFunc())
                 continue;
 
+            const std::string platformRaw {Utils::String::toLower(system.child("platform").text().get())};
+            if (isSystemExcluded(name, platformRaw)) {
+                LOG(LogInfo) << "SystemData::loadConfig(): Skipping excluded system \"" << name << "\"";
+                continue;
+            }
+
             // If there is a %ROMPATH% variable set for the system, expand it. By doing this
             // it's possible to use either absolute ROM paths in es_systems.xml or to utilize
             // the ROM path configured as ROMDirectory in es_settings.xml. If it's set to ""
@@ -990,16 +1148,23 @@ bool SystemData::loadConfig()
 
             // Check that the ROM directory for the system is valid or otherwise abort the
             // processing.
+            bool createdDirectory {false};
             if (!Utils::FileSystem::exists(path)) {
-                LOG(LogDebug) << "SystemData::loadConfig(): Skipping system \"" << name
+                if (sMameHasCandy) {
+                    if (Utils::FileSystem::createDirectory(path))
+                        createdDirectory = true;
+                }
+                else {
+                    LOG(LogDebug) << "SystemData::loadConfig(): Skipping system \"" << name
 #if defined(_WIN64)
-                              << "\" as the defined ROM directory \""
-                              << Utils::String::replace(path, "/", "\\")
+                                  << "\" as the defined ROM directory \""
+                                  << Utils::String::replace(path, "/", "\\")
 #else
-                              << "\" as the defined ROM directory \"" << path
+                                  << "\" as the defined ROM directory \"" << path
 #endif
-                              << "\" does not exist";
-                continue;
+                                  << "\" does not exist";
+                    continue;
+                }
             }
             if (!Utils::FileSystem::isDirectory(path)) {
                 LOG(LogDebug) << "SystemData::loadConfig(): Skipping system \"" << name
@@ -1161,6 +1326,8 @@ bool SystemData::loadConfig()
             if (newSys->getRootFolder()->getChildrenByFilename().size() == 0 || onlyHidden) {
                 LOG(LogDebug) << "SystemData::loadConfig(): Skipping system \"" << name
                               << "\" as no files matched any of the defined file extensions";
+                if (createdDirectory)
+                    Utils::FileSystem::removeDirectory(path, false);
                 delete newSys;
             }
             else {
@@ -1511,6 +1678,10 @@ bool SystemData::createSystemDirectories()
                 LOG(LogError) << "System \"" << name
                               << "\" is missing the fullname, path, "
                                  "extension, or command tag, skipping entry";
+                continue;
+            }
+
+            if (isSystemExcluded(name, platform)) {
                 continue;
             }
 

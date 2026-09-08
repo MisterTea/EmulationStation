@@ -29,6 +29,8 @@
 #include "SystemStatus.h"
 #include "guis/GuiDetectDevice.h"
 #include "guis/GuiLaunchScreen.h"
+#include "guis/GuiScraperMulti.h"
+#include "scrapers/Scraper.h"
 #include "utils/FileSystemUtil.h"
 #include "utils/LocalizationUtil.h"
 #include "utils/PlatformUtil.h"
@@ -78,6 +80,7 @@ namespace
 #endif
     bool forceInputConfig {false};
     bool createSystemDirectories {false};
+    bool scrapeAll {false};
     bool settingsNeedSaving {false};
     bool portableMode {false};
 
@@ -390,6 +393,9 @@ bool parseArguments(const std::vector<std::string>& arguments)
         else if (arguments[i] == "--create-system-dirs") {
             createSystemDirectories = true;
         }
+        else if (arguments[i] == "--scrape-all" || arguments[i] == "--scrape") {
+            scrapeAll = true;
+        }
         else if (arguments[i] == "--debug") {
             Settings::getInstance()->setBool("Debug", true);
             Settings::getInstance()->setBool("DebugFlag", true);
@@ -429,6 +435,7 @@ bool parseArguments(const std::vector<std::string>& arguments)
 "  --force-kid                           Force the UI mode to Kid\n"
 "  --force-input-config                  Force configuration of input devices\n"
 "  --create-system-dirs                  Create game system directories\n"
+"  --scrape-all                          Start automated scraper for all games on startup\n"
 "  --home [path]                         Directory to use as home path\n"
 "  --debug                               Enable debug mode\n"
 "  --version, -v                         Display version information\n"
@@ -1230,6 +1237,35 @@ int main(int argc, char* argv[])
         else
             HttpReq::cleanupCurlMulti();
 #endif
+
+        if (scrapeAll) {
+            std::pair<std::queue<ScraperSearchParams>, std::map<SystemData*, int>> queue;
+            for (auto sys : SystemData::sSystemVector) {
+                if (sys->hasPlatformId(PlatformIds::PLATFORM_IGNORE) || sys->getPlatformIds().empty())
+                    continue;
+                std::vector<FileData*> games {sys->getRootFolder()->getScrapeFilesRecursive(
+                    Settings::getInstance()->getBool("ScraperIncludeFolders"),
+                    Settings::getInstance()->getBool("ScraperExcludeRecursively"),
+                    Settings::getInstance()->getBool("ScraperRespectExclusions"))};
+                for (auto game : games) {
+                    // Skip games that already have metadata and image scraped
+                    if (!game->metadata.get("desc").empty() && !game->getImagePath().empty())
+                        continue;
+
+                    ScraperSearchParams search;
+                    search.game = game;
+                    search.system = sys;
+                    ++queue.second[sys];
+                    queue.first.push(search);
+                }
+            }
+            if (!queue.first.empty()) {
+                LOG(LogInfo) << "Starting automated scraping for " << queue.first.size()
+                             << " games across all systems...";
+                GuiScraperMulti* gsm {new GuiScraperMulti(queue, false, true)};
+                window->pushGui(gsm);
+            }
+        }
 
 #if defined(_WIN64)
         if (Settings::getInstance()->getBool("PortableMode")) {

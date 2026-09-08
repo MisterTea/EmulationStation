@@ -131,7 +131,8 @@ namespace GamelistFileParser
 
     void parseGamelist(SystemData* system)
     {
-        const bool trustGamelist {Settings::getInstance()->getBool("ParseGamelistOnly")};
+        const bool trustGamelist {Settings::getInstance()->getBool("ParseGamelistOnly") ||
+                                  SystemData::getMameHasCandy()};
         const std::string& xmlpath {system->getGamelistPath(false)};
 
         if (!Utils::FileSystem::exists(xmlpath)) {

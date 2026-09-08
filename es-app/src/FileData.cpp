@@ -37,7 +37,8 @@
 FileData::FileData(FileType type,
                    const std::string& path,
                    SystemEnvironmentData* envData,
-                   SystemData* system)
+                   SystemData* system,
+                   const std::string& displayName)
     : metadata {type == GAME ? GAME_METADATA : FOLDER_METADATA}
     , mSourceFileData {nullptr}
     , mParent {nullptr}
@@ -53,14 +54,17 @@ FileData::FileData(FileType type,
     , mNoLoad {false}
 {
     // Metadata needs at least a name field (since that's what getName() will return).
-    if ((system->hasPlatformId(PlatformIds::ARCADE) ||
-         system->hasPlatformId(PlatformIds::SNK_NEO_GEO)) &&
-        metadata.getType() != FOLDER_METADATA) {
-        // If it's a MAME or Neo Geo game, expand the game name accordingly.
-        metadata.set("name", MameNames::getInstance().getCleanName(getCleanName()));
+    if (metadata.getType() != FOLDER_METADATA) {
+        if (!displayName.empty()) {
+            metadata.set("name", displayName);
+        }
+        else {
+            // Expand the game name based on MAME software list / arcade machine mapping.
+            metadata.set("name", MameNames::getInstance().getCleanName(system->getName(), getCleanName()));
+        }
     }
     else {
-        if (metadata.getType() == FOLDER_METADATA && Utils::FileSystem::isHidden(mPath))
+        if (Utils::FileSystem::isHidden(mPath))
             metadata.set("name", Utils::FileSystem::getFileName(mPath));
         else
             metadata.set("name", getDisplayName());

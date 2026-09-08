@@ -167,6 +167,9 @@ public:
     static inline std::unique_ptr<FindRules> sFindRules;
     static inline std::unique_ptr<ImportRules> sImportRules;
     static inline bool sStartupExitSignal {false};
+    static inline bool sMameHasCandy {false};
+    static bool checkMameHasCandy();
+    static bool getMameHasCandy() { return sMameHasCandy; }
 
     const bool isCollection() const { return mIsCollectionSystem; }
     const bool isCustomCollection() const { return mIsCustomCollectionSystem; }
@@ -214,6 +217,7 @@ private:
     bool mLaunchOnOtherScreen;
 
     bool populateFolder(FileData* folder);
+    void populateCandyGames(FileData* folder);
     void indexAllGameFilters(const FileData* folder);
     void setIsGameSystemStatus();
 

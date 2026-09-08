@@ -28,7 +28,8 @@ class GuiScraperMulti : public GuiComponent
 public:
     GuiScraperMulti(
         const std::pair<std::queue<ScraperSearchParams>, std::map<SystemData*, int>>& searches,
-        bool approveResults);
+        bool approveResults,
+        bool autoClose = false);
 
     virtual ~GuiScraperMulti();
 
@@ -64,6 +65,7 @@ private:
     unsigned int mTotalSuccessful;
     unsigned int mTotalSkipped;
     bool mApproveResults;
+    bool mAutoClose;
 };
 
 #endif // ES_APP_GUIS_GUI_SCRAPER_MULTI_H
