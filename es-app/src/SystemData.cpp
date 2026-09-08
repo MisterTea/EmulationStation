@@ -36,6 +36,11 @@
 #include <random>
 #include <unordered_set>
 
+#if defined(_WIN32)
+#define popen _popen
+#define pclose _pclose
+#endif
+
 #include "FileData.h"
 #include "MameNames.h"
 
