@@ -31,6 +31,7 @@
 #include <SDL2/SDL_timer.h>
 
 #include <fstream>
+#include <cstdio>
 #include <pugixml.hpp>
 #include <random>
 #include <unordered_set>
